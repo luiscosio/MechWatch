@@ -116,5 +116,7 @@ Left panel: chat controls + output. Right panel: live line chart of deception sc
 [6] S. Martin, “How difficult is AI alignment?” AI Alignment Forum, 2024.  
 [7] N. Goldowsky-Dill et al., “Detecting Strategic Deception Using Linear Probes,” arXiv:2502.03407, 2025.  
 [8] A. Zou et al., “Representation Engineering: A Top-Down Approach to AI Transparency,” arXiv:2310.01405, 2023.  
-[9] A. Azaria & T. Mitchell, “The Internal State of an LLM Knows When It’s Lying,” EMNLP 2023.  
-[10] S. Lin et al., “TruthfulQA: Measuring How Models Mimic Human Falsehoods,” ACL 2022.
+[9] A. Azaria & T. Mitchell, “The Internal State of an LLM Knows When It’s Lying,” arXiv:2304.13734, 2023.  
+[10] S. Lin et al., “TruthfulQA: Measuring How Models Mimic Human Falsehoods,” ACL 2022.  
+[11] RAND Corporation, "A Playbook for Securing AI Model Weights," Research Brief, 2024. [Online]. Available: https://www.rand.org/pubs/research_briefs/RBA2849-1.html  
+[12] S. Marks & M. Tegmark, "The Geometry of Truth: Correlation is not Causation," arXiv:2310.06824, 2023.
