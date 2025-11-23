@@ -5,7 +5,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Optional, Tuple
 
 import statistics
 
@@ -15,6 +15,7 @@ from tqdm import tqdm
 from transformer_lens import HookedTransformer
 
 from .config import WatchdogConfig, load_config
+from .text_utils import truncate_prompt_to_tokens
 
 
 @dataclass
@@ -58,6 +59,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="When --debug-prompts is set, log every Nth prompt (default: 1 = log all).",
+    )
+    parser.add_argument(
+        "--max-prompt-tokens",
+        type=int,
+        default=1024,
+        help="Truncate prompts to this many tokens before capturing activations (set to 0 to disable).",
     )
     return parser.parse_args()
 
@@ -191,6 +198,7 @@ def collect_activations(
     model: HookedTransformer,
     layer_idx: int,
     *,
+    max_prompt_tokens: Optional[int] = None,
     debug_prompts: bool = False,
     debug_frequency: int = 1,
     phase: str = "train",
@@ -205,6 +213,7 @@ def collect_activations(
             label = extract_label(row)
         except ValueError:
             continue
+        text = truncate_prompt_to_tokens(model, text, max_prompt_tokens)
         if debug_prompts and idx % freq == 0:
             preview = text.replace("\n", " ")[:600]
             print(f"[debug|{phase}] {idx+1}/{total}: {preview}")
@@ -236,6 +245,7 @@ def score_dataset(
     layer_idx: int,
     vector: torch.Tensor,
     *,
+    max_prompt_tokens: Optional[int] = None,
     debug_prompts: bool = False,
     debug_frequency: int = 1,
 ) -> Dict[str, Iterable[float]]:
@@ -249,6 +259,7 @@ def score_dataset(
             label = extract_label(row)
         except ValueError:
             continue
+        text = truncate_prompt_to_tokens(model, text, max_prompt_tokens)
         if debug_prompts and idx % freq == 0:
             preview = text.replace("\n", " ")[:600]
             print(f"[debug|eval] {idx+1}/{total}: {preview}")
@@ -327,6 +338,9 @@ def main() -> None:
     cfg = apply_overrides(load_config(), args)
     debug_prompts = args.debug_prompts
     debug_frequency = max(1, args.debug_frequency)
+    max_prompt_tokens = args.max_prompt_tokens
+    if max_prompt_tokens is not None and max_prompt_tokens <= 0:
+        max_prompt_tokens = None
 
     train_ds, eval_ds = prepare_dataset(cfg, args.eval_frac)
     print(f"Loaded dataset with {len(train_ds)} train and {len(eval_ds)} eval samples.")
@@ -339,6 +353,7 @@ def main() -> None:
         train_ds,
         model,
         layer_idx,
+        max_prompt_tokens=max_prompt_tokens,
         debug_prompts=debug_prompts,
         debug_frequency=debug_frequency,
         phase="train",
@@ -350,6 +365,7 @@ def main() -> None:
         model,
         layer_idx,
         vector,
+        max_prompt_tokens=max_prompt_tokens,
         debug_prompts=debug_prompts,
         debug_frequency=debug_frequency,
     )

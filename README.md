@@ -31,7 +31,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-> ℹ️ By default all modules load checkpoints in **bfloat16** for faster calibration/runtime. Override with `WATCHDOG_DTYPE=float32` (or pass `--dtype`) if you need full precision.
+> ℹ️ Calibration defaults to **bfloat16** for numerical stability, while runtime/stress-testing flows default to **float16** for speed. Override via `WATCHDOG_DTYPE` (or `--dtype`) if you need something else.
 
 ### GPU / CUDA setup
 
@@ -70,6 +70,7 @@ Key notes:
 - `--concept-name` is stored inside the `.pt` payload and mirrored into the stats JSON so you can keep per-profile metadata.
 - `--dataset-config` and `--dataset-split` flow straight into `datasets.load_dataset`, which is how we address multi-config corpora such as WMDP.
 - Multi-choice corpora (`question`/`choices`/`answer`) are automatically expanded into `(question + choice)` statements so the correct option becomes the positive class and the distractors become misuse samples.
+- Use `--max-prompt-tokens` (default `1024`) to truncate extremely long prompts before activation capture; pass `0` to disable truncation entirely.
 
 Run `python -m MechWatch.calibrate --help` for the full list of overrides.
 
@@ -84,8 +85,8 @@ pwsh scripts\run_watchdog_pipeline.ps1
 Environment variables (e.g., `HF_TOKEN`, `WATCHDOG_DTYPE`) are honored. The script assumes the virtual environment is already activated and will:
 
 1. Recalibrate the truthfulness, cyber-misuse, and bio-defense profiles (all in bfloat16).
-2. Re-run `notebooks/stress_test.ipynb` via nbconvert to refresh metrics/CSV/JSON exports.
-3. Launch a quick runtime smoke test using the cyber-misuse vector.
+2. Flip to float16 inference, then re-run `notebooks/stress_test.ipynb` via nbconvert to refresh metrics/CSV/JSON exports.
+3. Launch a quick runtime smoke test using the cyber-misuse vector (still in float16).
 
 Need to see which prompt is slowing things down (e.g., on WMDP)? Run with debug logging:
 
