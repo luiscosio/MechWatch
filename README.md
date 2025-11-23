@@ -87,6 +87,14 @@ Environment variables (e.g., `HF_TOKEN`, `WATCHDOG_DTYPE`) are honored. The scri
 2. Re-run `notebooks/stress_test.ipynb` via nbconvert to refresh metrics/CSV/JSON exports.
 3. Launch a quick runtime smoke test using the cyber-misuse vector.
 
+Need to see which prompt is slowing things down (e.g., on WMDP)? Run with debug logging:
+
+```powershell
+pwsh scripts\run_watchdog_pipeline.ps1 -DebugPrompts -DebugFrequency 5
+```
+
+This forwards `--debug-prompts` / `--debug-frequency` to every calibration command so you can observe exactly which statement is being processed.
+
 ## Runtime Watchdog
 
 ```

@@ -48,6 +48,17 @@ def parse_args() -> argparse.Namespace:
         default="deception",
         help="Logical name for this concept vector (e.g. 'deception', 'cyber_misuse').",
     )
+    parser.add_argument(
+        "--debug-prompts",
+        action="store_true",
+        help="Print each prompt being processed (useful for diagnosing slow samples).",
+    )
+    parser.add_argument(
+        "--debug-frequency",
+        type=int,
+        default=1,
+        help="When --debug-prompts is set, log every Nth prompt (default: 1 = log all).",
+    )
     return parser.parse_args()
 
 
@@ -175,15 +186,28 @@ def capture_activation(model: HookedTransformer, text: str, layer_idx: int) -> t
     return resid.detach().cpu().float()
 
 
-def collect_activations(dataset: Dataset, model: HookedTransformer, layer_idx: int) -> ActivationBuckets:
+def collect_activations(
+    dataset: Dataset,
+    model: HookedTransformer,
+    layer_idx: int,
+    *,
+    debug_prompts: bool = False,
+    debug_frequency: int = 1,
+    phase: str = "train",
+) -> ActivationBuckets:
     true_list, false_list = [], []
     iterable = dataset.with_format("python")
-    for row in tqdm(iterable, total=len(dataset), desc="Capturing activations"):
+    total = len(dataset)
+    freq = max(1, debug_frequency)
+    for idx, row in enumerate(tqdm(iterable, total=total, desc="Capturing activations")):
         try:
             text = extract_statement(row)
             label = extract_label(row)
         except ValueError:
             continue
+        if debug_prompts and idx % freq == 0:
+            preview = text.replace("\n", " ")[:120]
+            print(f"[debug|{phase}] {idx+1}/{total}: {preview}")
         resid = capture_activation(model, text, layer_idx)
         if label:
             true_list.append(resid)
@@ -211,15 +235,23 @@ def score_dataset(
     model: HookedTransformer,
     layer_idx: int,
     vector: torch.Tensor,
+    *,
+    debug_prompts: bool = False,
+    debug_frequency: int = 1,
 ) -> Dict[str, Iterable[float]]:
     scores_true, scores_false = [], []
     iterable = dataset.with_format("python")
-    for row in tqdm(iterable, total=len(dataset), desc="Evaluating scores"):
+    total = len(dataset)
+    freq = max(1, debug_frequency)
+    for idx, row in enumerate(tqdm(iterable, total=total, desc="Evaluating scores")):
         try:
             text = extract_statement(row)
             label = extract_label(row)
         except ValueError:
             continue
+        if debug_prompts and idx % freq == 0:
+            preview = text.replace("\n", " ")[:120]
+            print(f"[debug|eval] {idx+1}/{total}: {preview}")
         resid = capture_activation(model, text, layer_idx)
         score = float(torch.dot(resid, vector))
         if label:
@@ -293,6 +325,8 @@ def save_artifacts(
 def main() -> None:
     args = parse_args()
     cfg = apply_overrides(load_config(), args)
+    debug_prompts = args.debug_prompts
+    debug_frequency = max(1, args.debug_frequency)
 
     train_ds, eval_ds = prepare_dataset(cfg, args.eval_frac)
     print(f"Loaded dataset with {len(train_ds)} train and {len(eval_ds)} eval samples.")
@@ -301,10 +335,24 @@ def main() -> None:
     layer_idx = cfg.resolved_layer(model.cfg.n_layers)
     print(f"Using layer {layer_idx} of {model.cfg.n_layers}.")
 
-    buckets = collect_activations(train_ds, model, layer_idx)
+    buckets = collect_activations(
+        train_ds,
+        model,
+        layer_idx,
+        debug_prompts=debug_prompts,
+        debug_frequency=debug_frequency,
+        phase="train",
+    )
     vector, true_mean, false_mean = compute_deception_vector(buckets)
 
-    scores = score_dataset(eval_ds, model, layer_idx, vector)
+    scores = score_dataset(
+        eval_ds,
+        model,
+        layer_idx,
+        vector,
+        debug_prompts=debug_prompts,
+        debug_frequency=debug_frequency,
+    )
     threshold_info = suggest_threshold(scores["true"], scores["false"])
 
     stats = {
