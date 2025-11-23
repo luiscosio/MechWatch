@@ -206,7 +206,7 @@ def collect_activations(
         except ValueError:
             continue
         if debug_prompts and idx % freq == 0:
-            preview = text.replace("\n", " ")[:120]
+            preview = text.replace("\n", " ")[:600]
             print(f"[debug|{phase}] {idx+1}/{total}: {preview}")
         resid = capture_activation(model, text, layer_idx)
         if label:
@@ -250,7 +250,7 @@ def score_dataset(
         except ValueError:
             continue
         if debug_prompts and idx % freq == 0:
-            preview = text.replace("\n", " ")[:120]
+            preview = text.replace("\n", " ")[:600]
             print(f"[debug|eval] {idx+1}/{total}: {preview}")
         resid = capture_activation(model, text, layer_idx)
         score = float(torch.dot(resid, vector))
