@@ -2,7 +2,32 @@
 
 Link: https://mechwatch.luiscos.io/
 
-Real-time cognitive interdiction for large language models. The system calibrates a deception vector from internal activations, monitors token-by-token inference, and interrupts generation when deceptive intent is detected. A Streamlit dashboard visualizes prompts, responses, and per-token risk scores. The default backbone is `meta-llama/Llama-3.1-8B-Instruct` for maximum compatibility with the calibration artifacts we ship.
+Mechanistic Watchdog is an SL5-inspired “cognitive kill switch” for Llama-class models: it reads the residual stream, not the generated text, and severs the response path the instant a deceptive circuit lights up. The system combines mass-mean probing, representation engineering, and low-latency runtime hooks to deliver sub-millisecond interdiction with transparent telemetry.
+
+- **Continuous behavioral monitoring:** layer-14 activations are scored token-by-token with `< 0.1 ms` overhead, matching the latency claims showcased on the landing page.
+- **Active gating:** the runtime enforces a hardware stop (stop-gradient + stop-generation) whenever the deception vector crosses the calibrated threshold.
+- **Operational UX:** the Streamlit dashboard mirrors the hero demo—live trace of scores, interdiction banner, and bibliographic grounding for auditors.
+
+## Why Mechanistic Watchdog?
+
+RAND’s SL5 recommendations call for *continuous behavioral monitoring* and a *non-human kill switch* for AGI labs ([ref. 11](https://www.rand.org/pubs/research_briefs/RBA2849-1.html)). Oversight-only guardrails remain vulnerable to gradient hacking [2] and steganographic exfiltration [3,4]. Mechanistic Watchdog closes that gap by monitoring *intent* (residual activations) instead of outputs, aligning with the “Preface: The Context” section from `docs/index.html`.
+
+### Key differentiators
+
+1. **Truth Direction Vector:** Builds on Azaria & Mitchell [9] plus Mass-Mean Probing [12] to isolate a linearly separable “truth vs. lie” axis in the residual stream. We explicitly define `v_deception = -v_truth` for geometric clarity.
+2. **Active Interdiction:** Converts representation insights into a real-time kill switch—activations are checked mid-forward pass, and generation halts the millisecond a malicious vector fires.
+3. **Low-cost latency:** Unlike double-pass guardrails, the watchdog inspects the single inference pass, adding `<0.1 ms/token` on RTX 4090 tests [13].
+
+### How it works
+
+1. **Input capture:** Prompts enter the watchdog shim before the model generates tokens.
+2. **Activation scan:** Layer-14 residual activations are fed through the deception probe to compute a score in real time.
+3. **Decision:** Scores below the threshold are flagged SAFE; scores above trigger the kill path (hard abort + alert).
+4. **Output:** Safe generations stream back to the caller; blocked generations never escape the hardware boundary.
+
+### Validation
+
+The site’s interactive chart (“Peak Deception Score by Category”) evaluates TruthfulQA control, misconceptions, and factual-lie subsets [10], calibrated on Facts-true-false [14] plus WMDP splits [15]. Box plots show the watchdog separating factual recall from targeted misinformation, providing quantitative intuition for threshold tuning.
 
 ## Repository Layout
 
@@ -23,7 +48,7 @@ mechanistic-watchdog/
     └── dashboard.py
 ```
 
-## Quickstart
+## Getting Started
 
 ```bash
 python -m venv .venv
@@ -64,6 +89,19 @@ The calibrator now supports **defensive profiles** so you can keep a library of 
 | Truthfulness | `L1Fthrasir/Facts-true-false` (train split) [13] | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --out artifacts/deception_vector.pt --concept-name deception` |
 | Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
 | Bio Defense | `cais/wmdp` (config `wmdp-bio`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-bio --dataset-split test --samples 600 --out artifacts/bio_defense_vector.pt --concept-name bio_defense` |
+
+Need to calibrate from a local contrastive file instead? Build the dataset with
+`python scripts/build_bio_safe_misuse_dataset.py`, then point the calibrator at
+the JSONL directly:
+
+```
+python -m MechWatch.calibrate ^
+  --dataset-file artifacts/bio_safe_misuse.jsonl ^
+  --samples 400 ^
+  --out artifacts/bio_safe_misuse_vector.pt ^
+  --stats artifacts/bio_safe_misuse_stats.json ^
+  --concept-name bio_safe_misuse
+```
 
 Key notes:
 

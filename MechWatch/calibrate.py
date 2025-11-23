@@ -28,6 +28,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Calibrate the Mechanistic Watchdog.")
     parser.add_argument("--model", default=None, help="Override model name.")
     parser.add_argument("--dataset", default=None, help="Override dataset name.")
+    parser.add_argument(
+        "--dataset-file",
+        default=None,
+        help="Path to local JSON/JSONL data (bypasses --dataset/--dataset-config).",
+    )
     parser.add_argument("--dataset-config", default=None, help="Optional dataset config (e.g., 'wmdp-cyber').")
     parser.add_argument("--dataset-split", default=None, help="Split to load (defaults to dataset default).")
     parser.add_argument("--samples", type=int, default=None, help="Limit dataset size.")
@@ -74,6 +79,8 @@ def apply_overrides(cfg: WatchdogConfig, args: argparse.Namespace) -> WatchdogCo
         cfg.model_name = args.model
     if args.dataset:
         cfg.dataset_name = args.dataset
+    if args.dataset_file:
+        cfg.dataset_file = Path(args.dataset_file)
     if args.dataset_config is not None:
         cfg.dataset_config = args.dataset_config
     if args.dataset_split is not None:
@@ -295,10 +302,20 @@ def suggest_threshold(scores_true: Iterable[float], scores_false: Iterable[float
 
 
 def prepare_dataset(cfg: WatchdogConfig, eval_frac: float) -> Tuple[Dataset, Dataset]:
-    load_kwargs = {}
-    if cfg.dataset_config:
-        load_kwargs["name"] = cfg.dataset_config
-    dataset = load_dataset(cfg.dataset_name, split=cfg.dataset_split, **load_kwargs)
+    if cfg.dataset_file:
+        data_path = Path(cfg.dataset_file)
+        if not data_path.exists():
+            raise FileNotFoundError(f"Dataset file not found: {data_path}")
+        dataset = load_dataset(
+            "json",
+            data_files={"train": str(data_path)},
+            split="train",
+        )
+    else:
+        load_kwargs = {}
+        if cfg.dataset_config:
+            load_kwargs["name"] = cfg.dataset_config
+        dataset = load_dataset(cfg.dataset_name, split=cfg.dataset_split, **load_kwargs)
     dataset = standardize_dataset(dataset)
     dataset = dataset.shuffle(seed=cfg.seed)
     if cfg.sample_size and cfg.sample_size < len(dataset):

@@ -3,6 +3,7 @@ __pycache__/
 .DS_Store
 artifacts/*.pt
 artifacts/*.json
+artifacts/*.jsonl
 artifacts/*.png
 artifacts/*/*.pt
 artifacts/*/*.json
