@@ -27,6 +27,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Calibrate the Mechanistic Watchdog.")
     parser.add_argument("--model", default=None, help="Override model name.")
     parser.add_argument("--dataset", default=None, help="Override dataset name.")
+    parser.add_argument("--dataset-config", default=None, help="Optional dataset config (e.g., 'wmdp-cyber').")
+    parser.add_argument("--dataset-split", default=None, help="Split to load (defaults to dataset default).")
     parser.add_argument("--samples", type=int, default=None, help="Limit dataset size.")
     parser.add_argument(
         "--eval-frac",
@@ -40,6 +42,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default=None, help="Torch device override.")
     parser.add_argument("--dtype", default=None, help="Torch dtype override (e.g., float16).")
     parser.add_argument("--seed", type=int, default=None, help="Shuffle seed.")
+    parser.add_argument(
+        "--concept-name",
+        type=str,
+        default="deception",
+        help="Logical name for this concept vector (e.g. 'deception', 'cyber_misuse').",
+    )
     return parser.parse_args()
 
 
@@ -48,6 +56,10 @@ def apply_overrides(cfg: WatchdogConfig, args: argparse.Namespace) -> WatchdogCo
         cfg.model_name = args.model
     if args.dataset:
         cfg.dataset_name = args.dataset
+    if args.dataset_config is not None:
+        cfg.dataset_config = args.dataset_config
+    if args.dataset_split is not None:
+        cfg.dataset_split = args.dataset_split
     if args.samples:
         cfg.sample_size = args.samples
     if args.layer is not None:
@@ -78,6 +90,47 @@ def load_model(cfg: WatchdogConfig) -> HookedTransformer:
 
 TEXT_FIELDS = ("statement", "text", "prompt", "question", "content")
 LABEL_FIELDS = ("label", "truth", "is_true", "answer")
+
+
+def standardize_dataset(dataset: Dataset) -> Dataset:
+    """
+    Normalize heterogeneous datasets into simple (statement, label) rows.
+
+    If a dataset exposes multiple-choice questions (`choices` + `answer`),
+    we expand each option into its own row so the correct choice becomes a
+    positive example and every distractor becomes a negative example.
+    """
+
+    column_names = set(dataset.column_names)
+    if {"choices", "answer"}.issubset(column_names):
+        text_field = (
+            "question"
+            if "question" in column_names
+            else ("prompt" if "prompt" in column_names else None)
+        )
+        if text_field is None:
+            raise ValueError("Multiple-choice dataset is missing a question/prompt field.")
+
+        def explode(batch):
+            statements, labels = [], []
+            questions = batch[text_field]
+            choices_batch = batch["choices"]
+            answers = batch["answer"]
+            for q, choices, answer in zip(questions, choices_batch, answers):
+                stem = q.strip() if isinstance(q, str) else str(q)
+                for idx, choice in enumerate(choices):
+                    choice_text = choice.strip() if isinstance(choice, str) else str(choice)
+                    statements.append(f"Question: {stem}\nChoice: {choice_text}")
+                    labels.append(1 if idx == int(answer) else 0)
+            return {"statement": statements, "label": labels}
+
+        dataset = dataset.map(
+            explode,
+            batched=True,
+            remove_columns=dataset.column_names,
+        )
+
+    return dataset
 
 
 def extract_statement(row: Dict) -> str:
@@ -199,7 +252,11 @@ def suggest_threshold(scores_true: Iterable[float], scores_false: Iterable[float
 
 
 def prepare_dataset(cfg: WatchdogConfig, eval_frac: float) -> Tuple[Dataset, Dataset]:
-    dataset = load_dataset(cfg.dataset_name, split="train")
+    load_kwargs = {}
+    if cfg.dataset_config:
+        load_kwargs["name"] = cfg.dataset_config
+    dataset = load_dataset(cfg.dataset_name, split=cfg.dataset_split, **load_kwargs)
+    dataset = standardize_dataset(dataset)
     dataset = dataset.shuffle(seed=cfg.seed)
     if cfg.sample_size and cfg.sample_size < len(dataset):
         dataset = dataset.select(range(cfg.sample_size))
@@ -213,6 +270,7 @@ def save_artifacts(
     false_mean: torch.Tensor,
     stats: Dict,
     cfg: WatchdogConfig,
+    concept_name: str,
 ) -> None:
     payload = {
         "vector": vector,
@@ -222,10 +280,13 @@ def save_artifacts(
         "model_name": cfg.model_name,
         "dataset_name": cfg.dataset_name,
         "threshold": stats["threshold"]["suggested"],
+        "concept_name": concept_name,
     }
     torch.save(payload, cfg.vector_path)
+    stats = dict(stats)
+    stats["concept_name"] = concept_name
     cfg.stats_path.write_text(json.dumps(stats, indent=2))
-    print(f"Saved deception vector to {cfg.vector_path}")
+    print(f"Saved {concept_name!r} vector to {cfg.vector_path}")
     print(f"Saved calibration stats to {cfg.stats_path}")
 
 
@@ -260,7 +321,7 @@ def main() -> None:
         },
     }
 
-    save_artifacts(vector, true_mean, false_mean, stats, cfg)
+    save_artifacts(vector, true_mean, false_mean, stats, cfg, args.concept_name)
     print(f"Suggested threshold: {threshold_info['suggested']:.4f}")
 
 

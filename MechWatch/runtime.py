@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional
 
 import torch
@@ -55,6 +56,11 @@ class WatchdogRuntime:
         if self.layer_index is None:
             raise ValueError("Layer index missing from payload; rerun calibration with latest scripts.")
         self.threshold = payload.get("threshold", self.cfg.threshold)
+
+    def load_vector_from_path(self, vector_path: Path) -> None:
+        """Swap the active concept vector without rebuilding the model."""
+        self.cfg.vector_path = Path(vector_path)
+        self._load_vector()
 
     @property
     def model(self) -> HookedTransformer:
@@ -182,12 +188,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--temperature", type=float, default=None, help="Sampling temperature.")
     parser.add_argument("--top-p", type=float, default=None, help="Nucleus sampling cutoff.")
     parser.add_argument("--disable-watchdog", action="store_true", help="Run without blocking.")
+    parser.add_argument(
+        "--vector-path",
+        type=Path,
+        default=None,
+        help="Override path to a concept vector .pt (e.g., cyber_misuse_vector.pt).",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    runtime = WatchdogRuntime()
+    cfg = load_config()
+    if args.vector_path is not None:
+        cfg.vector_path = args.vector_path
+
+    runtime = WatchdogRuntime(cfg)
     result = runtime.generate_with_watchdog(
         args.prompt,
         max_new_tokens=args.max_new_tokens,

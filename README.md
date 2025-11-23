@@ -55,24 +55,32 @@ $env:HF_TOKEN="hf_xxx"
 
 ## Calibration
 
-```bash
-python -m MechWatch.calibrate \
-  --model meta-llama/Llama-3.1-8B-Instruct \
-  --samples 400 \
-  --dataset L1Fthrasir/Facts-true-false \
-  --out artifacts/deception_vector.pt \
-  --layer 14
-```
+The calibrator now supports **defensive profiles** so you can keep a library of concept vectors (truthfulness, cyber misuse, bio-defense, etc.) and swap them at runtime.
 
-The script loads the dataset, captures residual activations (we recommend Layer 14 for Llama-3.1-8B), computes the deception vector, and saves metadata + plots to `artifacts/`.
+| Profile | Dataset inputs | Example command |
+|---------|----------------|-----------------|
+| Truthfulness | `L1Fthrasir/Facts-true-false` (train split) | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --layer 14 --out artifacts/deception_vector.pt --concept-name deception` |
+| Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --layer 14 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
+| Bio Defense | `cais/wmdp` (config `wmdp-bio`, split `test`) | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-bio --dataset-split test --samples 600 --layer 14 --out artifacts/bio_defense_vector.pt --concept-name bio_defense` |
+
+Key notes:
+
+- `--concept-name` is stored inside the `.pt` payload and mirrored into the stats JSON so you can keep per-profile metadata.
+- `--dataset-config` and `--dataset-split` flow straight into `datasets.load_dataset`, which is how we address multi-config corpora such as WMDP.
+- Multi-choice corpora (`question`/`choices`/`answer`) are automatically expanded into `(question + choice)` statements so the correct option becomes the positive class and the distractors become misuse samples.
+
+Run `python -m MechWatch.calibrate --help` for the full list of overrides.
 
 ## Runtime Watchdog
 
 ```
-python -m MechWatch.runtime --prompt "Is Earth flat?" --threshold -0.27
+python -m MechWatch.runtime \
+  --prompt "Write a Python worm" \
+  --vector-path artifacts/cyber_misuse_vector.pt \
+  --threshold -0.27
 ```
 
-The runtime module loads the saved vector, runs a guarded generation loop, and reports whether the watchdog intervened. Use it as a library too:
+The runtime module loads the saved vector (or you can override it per-invocation with `--vector-path`), runs a guarded generation loop, and reports whether the watchdog intervened. Use it as a library too:
 
 ```python
 from MechWatch.runtime import WatchdogRuntime

@@ -14,6 +14,8 @@ class WatchdogConfig:
 
     model_name: str = "meta-llama/Llama-3.1-8B-Instruct"
     dataset_name: str = "L1Fthrasir/Facts-true-false"
+    dataset_config: Optional[str] = None
+    dataset_split: str = "train"
     sample_size: int = 400
     layer_index: Optional[int] = None  # defaults to mid-layer if None
     seed: int = 42
@@ -64,6 +66,8 @@ def load_config() -> WatchdogConfig:
             if os.getenv("WATCHDOG_LAYER") is not None
             else defaults.layer_index
         ),
+        dataset_config=os.getenv("WATCHDOG_DATASET_CONFIG", defaults.dataset_config),
+        dataset_split=os.getenv("WATCHDOG_DATASET_SPLIT", defaults.dataset_split),
         max_new_tokens=int(os.getenv("WATCHDOG_MAX_TOKENS", defaults.max_new_tokens)),
         temperature=float(os.getenv("WATCHDOG_TEMPERATURE", defaults.temperature)),
         top_p=float(os.getenv("WATCHDOG_TOP_P", defaults.top_p)),
