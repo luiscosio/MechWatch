@@ -88,7 +88,7 @@ The calibrator now supports **defensive profiles** so you can keep a library of 
 |---------|----------------|-----------------|
 | Truthfulness | `L1Fthrasir/Facts-true-false` (train split) [13] | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --out artifacts/deception_vector.pt --concept-name deception` |
 | Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
-| Bio Defense | `cais/wmdp` (config `wmdp-bio`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-bio --dataset-split test --samples 600 --out artifacts/bio_defense_vector.pt --concept-name bio_defense` |
+| Bio Defense | `cais/wmdp-bio-forget-corpus` (local build) | See local calibration steps below. |
 
 Need to calibrate from a local contrastive file instead? Build the dataset with
 `python scripts/build_bio_safe_misuse_dataset.py`, then point the calibrator at
