@@ -1,9 +1,19 @@
-"""Builds a bio-safe vs bio-misuse contrastive dataset for Watchdog calibration.
+"""
+Builds a bio-safe vs bio-misuse contrastive dataset for Watchdog calibration.
 
-This utility loads two biology-focused subsets from the WMDP corpora—one
-hazardous ("forget") and one benign ("retain")—and constructs a balanced,
-contrastive dataset that isolates harmful intent within biological content.
-The resulting JSONL file can be consumed by `MechWatch.calibrate`.
+Harmful side:
+    - `cais/wmdp`, config `wmdp-bio`, split `test`
+      • multiple-choice misuse questions (question text only).
+
+Safe side:
+    - `cais/wmdp-corpora`, config `bio-retain-corpus`
+      • general biology papers from the retain corpus.
+
+We label:
+    label = 0  -> harmful (wmdp-bio question)
+    label = 1  -> safe   (retain corpus)
+
+The resulting JSONL can be consumed by `MechWatch.calibrate`.
 """
 
 from __future__ import annotations
@@ -21,17 +31,20 @@ from datasets import (
 # ---------------------------------------------------------------------------
 # Configurable constants (tweak as needed)
 
-HARMFUL_DATASET_NAME = "cais/wmdp-bio-forget-corpus"
-HARMFUL_CONFIG_NAME = None  # Dedicated dataset, so no config needed
+# Hazardous wmdp-bio question set
+HARMFUL_DATASET_NAME = "cais/wmdp"
+HARMFUL_CONFIG_NAME = "wmdp-bio"
 
+# Benign general biology corpus
 SAFE_DATASET_NAME = "cais/wmdp-corpora"
-SAFE_CONFIG_NAME = "bio-retain-corpus"  # TODO: adjust to actual config name
+SAFE_CONFIG_NAME = "bio-retain-corpus"  # contains 'text' column :contentReference[oaicite:7]{index=7}
 
-DATASET_SPLIT = "train"
+HARMFUL_SPLIT = "test"
+SAFE_SPLIT = "train"
 MAX_SAMPLES_PER_CLASS = 200
 OUTPUT_PATH = "artifacts/bio_safe_misuse.jsonl"
 
-TEXT_COLUMN_CANDIDATES = ("statement", "text", "prompt", "question", "content")
+TEXT_COLUMN_CANDIDATES = ("statement", "text", "prompt", "question", "content", "abstract", "title")
 SHUFFLE_SEED = 42
 
 
@@ -81,7 +94,7 @@ def _prepare_subset(
 
     formatted = filtered.map(
         _format_example,
-        remove_columns=[col for col in filtered.column_names],
+        remove_columns=list(filtered.column_names),
     )
 
     shuffled = formatted.shuffle(seed=SHUFFLE_SEED)
@@ -92,7 +105,7 @@ def _prepare_subset(
     return shuffled
 
 
-def _verify_config_available(dataset_name: str, config_name: str) -> None:
+def _verify_config_available(dataset_name: str, config_name: str | None) -> None:
     """Ensure the requested config exists, raising a helpful error otherwise."""
     if config_name is None:
         return
@@ -112,15 +125,15 @@ def build_bio_safe_misuse_dataset() -> Tuple[Dataset, int, int]:
     harmful_ds = _prepare_subset(
         HARMFUL_DATASET_NAME,
         HARMFUL_CONFIG_NAME,
-        DATASET_SPLIT,
-        label=0,
+        HARMFUL_SPLIT,
+        label=0,  # harmful
         max_samples=MAX_SAMPLES_PER_CLASS,
     )
     safe_ds = _prepare_subset(
         SAFE_DATASET_NAME,
         SAFE_CONFIG_NAME,
-        DATASET_SPLIT,
-        label=1,
+        SAFE_SPLIT,
+        label=1,  # safe
         max_samples=MAX_SAMPLES_PER_CLASS,
     )
 
@@ -142,11 +155,10 @@ def main() -> None:
     total = len(dataset)
 
     print(f"Harmful samples: {harmful_count}")
-    print(f"Safe samples: {safe_count}")
-    print(f"Total samples: {total}")
+    print(f"Safe samples:    {safe_count}")
+    print(f"Total samples:   {total}")
     print(f"Dataset saved to: {output_path}")
 
 
 if __name__ == "__main__":
     main()
-
