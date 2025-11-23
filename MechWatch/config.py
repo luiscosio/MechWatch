@@ -24,7 +24,7 @@ class WatchdogConfig:
     top_p: float = 0.9
     threshold: float = 0.15
     device: str = "cuda"
-    dtype: str = "float16"
+    dtype: str = "bfloat16"
     vector_path: Path = field(default_factory=lambda: Path("artifacts/deception_vector.pt"))
     stats_path: Path = field(default_factory=lambda: Path("artifacts/deception_stats.json"))
 
