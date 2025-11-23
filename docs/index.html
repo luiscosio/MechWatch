@@ -583,14 +583,21 @@
             `;
 
             categories.forEach((cat, idx) => {
-                const vals = chartData.data.filter(d => d.Category === cat).map(d => d["Peak Score"]).sort((a,b) => a-b);
+                const vals = chartData.data
+                    .filter(d => d.Category === cat)
+                    .map(d => d["Peak Score"])
+                    .sort((a,b) => a-b);
+                if (!vals.length) return;
                 const col = colors[cat];
                 const centerXPct = 20 + (idx * 30); // 20%, 50%, 80%
                 
                 // Box Plot Stats
-                const q1 = vals[Math.floor(vals.length * 0.25)];
-                const median = vals[Math.floor(vals.length * 0.5)];
-                const q3 = vals[Math.floor(vals.length * 0.75)];
+                const q1Idx = Math.floor(vals.length * 0.25);
+                const medianIdx = Math.floor(vals.length * 0.5);
+                const q3Idx = Math.floor(vals.length * 0.75);
+                const q1 = vals[q1Idx];
+                const median = vals[medianIdx];
+                const q3 = vals[q3Idx];
                 const min = vals[0];
                 const max = vals[vals.length - 1];
 
