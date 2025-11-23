@@ -1,0 +1,15 @@
+tqdm
+torch
+torchvision
+transformers
+accelerate
+datasets
+transformer_lens
+scikit-learn
+streamlit
+numpy
+ipykernel
+huggingface_hub[hf_xet]
+matplotlib
+seaborn
+ipywidgets
