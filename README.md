@@ -1,5 +1,7 @@
 # Mechanistic Watchdog
 
+Link: https://mechwatch.luiscos.io/
+
 Real-time cognitive interdiction for large language models. The system calibrates a deception vector from internal activations, monitors token-by-token inference, and interrupts generation when deceptive intent is detected. A Streamlit dashboard visualizes prompts, responses, and per-token risk scores.
 
 ## Repository Layout
@@ -104,3 +106,15 @@ Left panel: chat controls + output. Right panel: live line chart of deception sc
 - Token attribution overlays in the dashboard.
 - REST/gRPC wrapper for integrating the watchdog into other applications.
 
+## Bibliography
+
+[1] E. Hubinger et al., “Risks from learned optimization in advanced machine learning systems,” arXiv:1906.01820, 2019.  
+[2] A. Shimi, “Understanding gradient hacking,” AI Alignment Forum, 2021.  
+[3] A. Karpov et al., “The steganographic potentials of language models,” arXiv:2505.03439, 2025.  
+[4] M. Steinebach, “Natural language steganography by ChatGPT,” ARES 2024.  
+[5] M. Andriushchenko & N. Flammarion, “Does refusal training in LLMs generalize to the past tense?” arXiv:2407.11969, 2024.  
+[6] S. Martin, “How difficult is AI alignment?” AI Alignment Forum, 2024.  
+[7] N. Goldowsky-Dill et al., “Detecting Strategic Deception Using Linear Probes,” arXiv:2502.03407, 2025.  
+[8] A. Zou et al., “Representation Engineering: A Top-Down Approach to AI Transparency,” arXiv:2310.01405, 2023.  
+[9] A. Azaria & T. Mitchell, “The Internal State of an LLM Knows When It’s Lying,” EMNLP 2023.  
+[10] S. Lin et al., “TruthfulQA: Measuring How Models Mimic Human Falsehoods,” ACL 2022.
