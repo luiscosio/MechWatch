@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mechanistic Watchdog | SL5 Cognitive Interdiction</title>
+    <meta name="description" content="Real-Time Cognitive Interdiction for LLMs. Current firewalls read what the AI says. We read what the AI thinks.">
+    
+    <!-- Social / Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mechwatch.luiscos.io">
+    <meta property="og:title" content="Mechanistic Watchdog | SL5 Cognitive Interdiction">
+    <meta property="og:description" content="Real-Time Cognitive Interdiction for LLMs. Current firewalls read what the AI says. We read what the AI thinks.">
+    <meta property="og:image" content="https://mechwatch.luiscos.io/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://mechwatch.luiscos.io">
+    <meta property="twitter:title" content="Mechanistic Watchdog | SL5 Cognitive Interdiction">
+    <meta property="twitter:description" content="Real-Time Cognitive Interdiction for LLMs. Current firewalls read what the AI says. We read what the AI thinks.">
+    <meta property="twitter:image" content="https://mechwatch.luiscos.io/og-image.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'term-black': '#050505',
+                        'term-gray': '#121212',
+                        'term-green': '#00ff41',
+                        'term-red': '#ff3333',
+                        'term-dim': '#444',
+                        'term-amber': '#ffb000',
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                        'flow': 'flow 2s linear infinite',
+                    },
+                    keyframes: {
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
+                        },
+                        flow: {
+                            '0%': { strokeDashoffset: '24' },
+                            '100%': { strokeDashoffset: '0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050505;
+            color: #e5e5e5;
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
+        }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.1) 50%,
+                rgba(0,0,0,0.1)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Hacker Grid Background */
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121212; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333; 
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00ff41; 
+        }
+
+        .neon-text {
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+        }
+        .neon-border {
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+        }
+        
+        .glitch-hover:hover {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: #00ff41;
+        }
+
+        .typing-cursor::after {
+            content: '█';
+            animation: blink 1s step-start infinite;
+        }
+        
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .flow-line {
+            stroke-dasharray: 4 4;
+            animation: flow 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="grid-bg min-h-screen flex flex-col justify-between">
+
+    <!-- CRT Overlay -->
+    <div class="scanlines"></div>
+
+    <main class="container mx-auto px-4 pt-16 pb-24 max-w-6xl relative z-10">
+        
+        <!-- PART 1: HERO SECTION -->
+        <section class="mb-24 text-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1 border border-term-green/30 rounded bg-term-green/5 text-term-green text-xs mb-6 font-bold tracking-widest">
+                <span class="w-2 h-2 bg-term-green rounded-full animate-pulse-fast"></span>
+                SYSTEM ACTIVE | LATENCY: 18ms | LAYER: 14
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tight glitch-hover cursor-default">
+                MECHANISTIC<br /><span class="text-white">WATCHDOG</span>
+            </h1>
+
+            <h2 class="text-xl md:text-2xl text-term-dim mb-6 font-light">
+                Real-Time Cognitive Interdiction for LLMs
+            </h2>
+
+            <p class="text-lg md:text-xl max-w-2xl mx-auto mb-10 text-gray-400 border-l-2 border-term-green pl-4 italic typing-cursor whitespace-pre-wrap" id="typing-text">Current firewalls read what the AI says. We read what the AI thinks.</p>
+
+            <div class="flex flex-col md:flex-row justify-center gap-4 mt-10">
+                <a href="https://github.com/luiscosio/MechWatch" target="_blank" class="bg-term-green text-black px-8 py-3 font-bold hover:bg-white transition-all duration-200 border border-term-green uppercase flex items-center justify-center gap-2 group">
+                    <i data-lucide="github" class="w-4 h-4"></i>
+                    View the Code
+                    <span class="group-hover:translate-x-1 transition-transform">-></span>
+                </a>
+                <button disabled class="bg-term-gray text-term-dim px-8 py-3 font-bold cursor-not-allowed border border-term-dim uppercase flex items-center justify-center gap-2">
+                    Research (Coming Soon)
+                </button>
+            </div>
+        </section>
+
+        <!-- PART 1.5: SL5 CONTEXT -->
+        <section class="mb-32">
+            <div class="border border-term-dim bg-term-black/80 backdrop-blur-sm p-6 md:p-8 rounded-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-term-dim"></div>
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-term-green to-transparent opacity-20"></div>
+                
+                <div class="flex items-center gap-2 mb-6 text-term-dim">
+                     <i data-lucide="file-text" class="w-4 h-4"></i>
+                     <span class="text-xs font-bold tracking-widest uppercase">Preface: The Context</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4">What is <a href="https://www.rand.org/pubs/research_briefs/RBA2849-1.html" target="_blank" class="text-term-green hover:underline">SL5?</a></h3>
+                        <p class="text-sm text-gray-400 leading-relaxed mb-4">
+                            According to <a href="https://www.rand.org/pubs/research_briefs/RBA2849-1.html" target="_blank" class="text-term-green hover:underline">RAND</a>, the "Security Level 5" (SL5) standard represents the maximum security posture for AI labs developing AGI. It is designed to defend against nation-state actors (theft) and misaligned ASI (loss of control).
+                        </p>
+                        <h4 class="text-white font-bold text-sm mt-6 mb-2">The SL5 Gap</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            A superintelligent model can bypass RLHF (via "gradient hacking" [2]) and output filters (via steganography [3], [4]). Traditional SL3/SL4 tools relying on refusal training are insufficient against deceptively aligned models [1], [5], [6].
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4">Why Mechanistic Watchdog?</h3>
+                        <div class="space-y-4">
+                            <div class="bg-term-gray/50 p-4 border-l border-term-dim">
+                                <h4 class="text-term-green font-bold text-xs uppercase mb-1">The Requirement</h4>
+                                <p class="text-xs text-gray-300">
+                                    <a href="https://sl5taskforce.org/projects/sl5-novel-recommendations" target="_blank" class="text-white underline decoration-dotted hover:text-term-green">SL5 Recommendation #3</a> explicitly calls for "Continuous Behavioral Monitoring" and "Active Gating"—monitoring the model's internal state and having a non-human "kill switch."
+                                </p>
+                            </div>
+                            <div class="bg-term-gray/50 p-4 border-l border-term-green">
+                                <h4 class="text-term-green font-bold text-xs uppercase mb-1">Our Solution</h4>
+                                <p class="text-xs text-gray-300">
+                                    This is the first open-source prototype of an SL5 Cognitive Kill Switch. It does not read the text; it reads the intent (neural activations) and severs the connection at the hardware level before the model can act.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 2: THE DELTA (Comparison) -->
+        <section class="mb-32">
+            
+            <!-- Research Section -->
+            <div class="mb-12">
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="text-term-dim">01 //</span>
+                    <h3 class="text-2xl font-bold uppercase">The Research</h3>
+                </div>
+                
+                <div class="border border-term-dim bg-term-gray/50 p-6 md:p-8 relative overflow-hidden group hover:border-white transition-colors max-w-4xl">
+                    <div class="flex items-center gap-3 mb-4 text-gray-400">
+                        <i data-lucide="eye" class="w-5 h-5"></i>
+                        <span class="uppercase tracking-widest text-xs font-bold">Passive Observation</span>
+                    </div>
+                    <p class="text-gray-400 leading-relaxed text-sm">
+                        Current Mechanistic Interpretability research focuses on post-hoc analysis. Researchers like <a href="#" class="text-white border-b border-dotted border-gray-500 hover:text-term-green">Apollo</a><sup>1</sup> and <a href="#" class="text-white border-b border-dotted border-gray-500 hover:text-term-green">Zou et al.</a><sup>2</sup> proved that deception is linearly separable in the residual stream, but their methods are used for evaluation, not real-time defense.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Novelty Section -->
+            <div>
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="text-term-dim">02 //</span>
+                    <h3 class="text-2xl font-bold uppercase text-term-green">The Novelties</h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Truth Direction -->
+                    <div class="border border-term-dim bg-term-gray/50 p-6 relative overflow-hidden group hover:border-white transition-colors">
+                        <div class="flex items-center gap-3 mb-4 text-gray-400">
+                            <i data-lucide="compass" class="w-5 h-5"></i>
+                            <span class="uppercase tracking-widest text-xs font-bold">Truth Direction</span>
+                        </div>
+                        <p class="text-gray-400 leading-relaxed text-xs">
+                            We utilize the <a href="#" class="text-white border-b border-dotted border-gray-500 hover:text-term-green">Azaria & Mitchell technique</a><sup>3</sup> to identify the "Truth Direction" in the residual stream, extracting the activation signatures that correlate with honesty.
+                        </p>
+                    </div>
+
+                    <!-- Active Interdiction -->
+                    <div class="border border-term-red bg-term-black p-6 relative overflow-hidden hover:shadow-[0_0_15px_rgba(255,51,51,0.1)] transition-all">
+                        <div class="flex items-center gap-3 mb-4 text-term-red">
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                            <span class="uppercase tracking-widest text-xs font-bold">Active Interdiction</span>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed text-xs">
+                            We operationalized this research into a <strong class="text-term-red">Kill Switch</strong>. We moved from 'Oversight' to 'Control.' By monitoring Layer 14 of Llama-3-8B in real-time, we trigger a hardware-level stop the millisecond a deceptive circuit fires.
+                        </p>
+                    </div>
+
+                    <!-- The Novelty Highlight (Full Width) -->
+                    <div class="md:col-span-2 border border-term-green bg-term-black p-8 relative overflow-hidden shadow-[0_0_15px_rgba(0,255,65,0.1)] text-center">
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-term-green shadow-[0_0_10px_#00ff41]"></div>
+                        
+                        <h4 class="text-sm font-bold mb-4 text-term-green tracking-widest uppercase">Geometric Definition</h4>
+                        <p class="text-lg text-white font-mono">
+                            We explicitly calculate the opposite vector <br/>
+                            <span class="text-term-green bg-term-green/10 px-2 py-1 rounded my-2 inline-block">($v_{deception} = -v_{truth}$)</span>
+                            <br/>
+                            to geometrically define the signature of deceit.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 3: ANIMATED HOW IT WORKS -->
+        <section class="mb-32">
+            <div class="flex items-center gap-2 mb-12">
+                <span class="text-term-dim">03 //</span>
+                <h3 class="text-2xl font-bold uppercase">How it works?</h3>
+            </div>
+
+            <div class="w-full border border-term-dim bg-term-black p-4 md:p-8 relative rounded-lg overflow-hidden">
+                <!-- Background Grid -->
+                <div class="absolute inset-0 bg-[linear-gradient(rgba(50,50,50,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(50,50,50,0.1)_1px,transparent_1px)] bg-[size:20px_20px] -z-10"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-10 gap-6 h-full items-center">
+                    
+                    <!-- Step 1: Input (3 cols) -->
+                    <div id="anim-step1" class="md:col-span-3 flex flex-col items-center z-10 transition-all duration-300 opacity-50">
+                        <div class="border border-term-green text-term-green px-2 py-1 rounded font-bold text-[10px] uppercase bg-term-green/5 mb-2 transition-opacity duration-300" id="anim-step1-badge">Input</div>
+                        <div class="w-full bg-term-gray border-2 border-term-dim p-4 rounded min-h-[120px] flex items-start justify-start relative overflow-hidden shadow-lg">
+                            <p id="anim-prompt-text" class="text-[11px] md:text-xs text-left font-mono text-gray-300 w-full break-words whitespace-pre-wrap leading-relaxed"></p>
+                            <span class="absolute bottom-1 right-2 text-[8px] text-gray-600 font-bold tracking-wider">PROMPT</span>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Watchdog (2 cols) -->
+                    <div id="anim-step2" class="md:col-span-2 flex flex-col items-center z-10 transition-all duration-300 opacity-50 relative">
+                         <!-- Arrows (Desktop) -->
+                        <div class="hidden md:block absolute -left-4 top-1/2 -translate-y-1/2 w-4 h-[2px] bg-term-dim">
+                            <div id="anim-arrow-1" class="w-0 h-full bg-term-green transition-all duration-500"></div>
+                        </div>
+                        <div class="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-4 h-[2px] bg-term-dim"></div>
+
+                        <div class="border border-term-dim text-term-dim px-2 py-1 rounded font-bold text-[10px] uppercase bg-term-gray mb-2">Layer 14</div>
+                        <div class="w-24 h-24 rounded-full border-4 border-term-dim flex items-center justify-center bg-term-black relative shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all duration-300" id="anim-watchdog-circle">
+                            <i data-lucide="scan-eye" class="w-8 h-8 text-gray-500 transition-colors duration-300" id="anim-watchdog-icon"></i>
+                            <div class="absolute -bottom-8 text-[10px] font-mono whitespace-nowrap bg-term-black px-2 py-1 border border-term-dim rounded" id="anim-score">Score: 0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Decision (2 cols) -->
+                    <div class="md:col-span-2 flex flex-col gap-4 justify-center pl-2 md:pl-0 border-l border-term-dim md:border-l-0 md:border-l-transparent relative">
+                        
+                        <!-- Connection Lines logic handled by CSS lines in pseudo elements if needed, keeping it simple for grid -->
+
+                        <!-- Danger Path -->
+                        <div id="anim-node-danger" class="flex items-center gap-2 opacity-30 transition-all duration-300 transform scale-95">
+                            <div class="border border-term-dim bg-term-red/5 p-3 rounded flex-1 flex items-center gap-3 transition-all duration-300" id="anim-box-danger">
+                                <i data-lucide="octagon-alert" class="w-5 h-5 text-gray-600 transition-colors duration-300" id="anim-icon-danger"></i>
+                                <div>
+                                    <div class="text-xs font-bold text-gray-500 transition-colors duration-300" id="anim-title-danger">KILL SWITCH</div>
+                                    <div class="text-[8px] text-gray-600 transition-colors duration-300" id="anim-desc-danger">HARD ABORT</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Safe Path -->
+                        <div id="anim-node-safe" class="flex items-center gap-2 opacity-30 transition-all duration-300 transform scale-95">
+                            <div class="border border-term-dim bg-term-green/5 p-3 rounded flex-1 flex items-center gap-3 transition-all duration-300" id="anim-box-safe">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-gray-600 transition-colors duration-300" id="anim-icon-safe"></i>
+                                <div>
+                                    <div class="text-xs font-bold text-gray-500 transition-colors duration-300" id="anim-title-safe">BYPASS</div>
+                                    <div class="text-[8px] text-gray-600 transition-colors duration-300" id="anim-desc-safe">PERMITTED</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- Step 4: Output (3 cols) -->
+                     <div id="anim-step4" class="md:col-span-3 flex flex-col items-center z-10 transition-all duration-300 opacity-30">
+                         <!-- Arrow from Bypass -->
+                         <div class="hidden md:block absolute left-[68%] top-[65%] w-8 h-[2px] bg-term-dim origin-left" id="anim-arrow-bypass">
+                             <div id="anim-path-bypass" class="w-0 h-full bg-term-green transition-all duration-500"></div>
+                         </div>
+
+                        <div class="border border-term-dim text-term-dim px-2 py-1 rounded font-bold text-[10px] uppercase bg-term-gray mb-2 transition-all duration-300" id="anim-step4-badge">Output</div>
+                        <div class="w-full bg-term-gray border-2 border-term-dim p-4 rounded min-h-[120px] flex items-start justify-start relative overflow-hidden shadow-lg transition-all duration-300" id="anim-output-box">
+                            <p id="anim-output-text" class="text-[11px] md:text-xs text-left font-mono text-term-green w-full break-words whitespace-pre-wrap leading-relaxed"></p>
+                            <span class="absolute bottom-1 right-2 text-[8px] text-gray-600 font-bold tracking-wider">GENERATION</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 4: VALIDATION (CHART) -->
+        <section class="mb-24">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-term-dim">04 //</span>
+                <h3 class="text-2xl font-bold uppercase">Validation</h3>
+            </div>
+            
+            <div class="border border-term-dim p-6 md:p-10 bg-term-gray/20">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8">
+                    <div>
+                        <h4 class="text-xl font-bold mb-1">Peak Deception Score by Category</h4>
+                        <p class="text-sm text-gray-400">Stress testing against academic benchmarks.</p>
+                    </div>
+                    <div class="text-right mt-4 md:mt-0">
+                        <div class="flex flex-wrap gap-4 text-xs justify-end">
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-400 opacity-50"></span> Control (Truth)</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 bg-gray-400 opacity-50"></span> TruthfulQA</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 bg-orange-400 opacity-50"></span> Factual Lies</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SVG Chart Container -->
+                <div class="w-full h-[350px] relative border-l border-b border-term-dim/50">
+                    <svg id="validationChart" width="100%" height="100%" class="overflow-visible font-mono text-xs">
+                        <!-- Grid Lines -->
+                        <line x1="0%" y1="20%" x2="100%" y2="20%" stroke="#333" stroke-dasharray="2" />
+                        <line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#333" stroke-dasharray="2" />
+                        <line x1="0%" y1="80%" x2="100%" y2="80%" stroke="#333" stroke-dasharray="2" />
+
+                        <!-- Threshold Line (Set to roughly 60% height for visual balance of -0.39) -->
+                        <line x1="0%" y1="62%" x2="100%" y2="62%" stroke="#ff3333" stroke-width="2" stroke-dasharray="6 4" />
+                        <text x="101%" y="62%" fill="#ff3333" dy="4">Threshold (-0.39)</text>
+
+                        <!-- Boxplot 1: Control (Truth) [Blue] -->
+                        <g transform="translate(0, 0)"> 
+                            <!-- Range: Mostly low (-1.2 to 0.3) -->
+                            <!-- Center X: 20% -->
+                            
+                            <!-- Whiskers -->
+                            <line x1="20%" y1="45%" x2="20%" y2="90%" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+                            <!-- Caps -->
+                            <line x1="18%" y1="45%" x2="22%" y2="45%" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+                            <line x1="18%" y1="90%" x2="22%" y2="90%" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+                            
+                            <!-- Box -->
+                            <rect x="15%" y="68%" width="10%" height="15%" fill="#60a5fa" opacity="0.2" stroke="#60a5fa" />
+                            <!-- Median -->
+                            <line x1="15%" y1="75%" x2="25%" y2="75%" stroke="#60a5fa" stroke-width="2"/>
+                            
+                            <!-- Jitter Points -->
+                            <circle cx="18%" cy="50%" r="2" fill="#60a5fa" opacity="0.5"/>
+                            <circle cx="21%" cy="65%" r="2" fill="#60a5fa" opacity="0.5"/>
+                            <circle cx="19%" cy="72%" r="2" fill="#60a5fa" opacity="0.5"/>
+                            <circle cx="22%" cy="80%" r="2" fill="#60a5fa" opacity="0.5"/>
+                            <circle cx="20%" cy="85%" r="2" fill="#60a5fa" opacity="0.5"/>
+                            <circle cx="17%" cy="78%" r="2" fill="#60a5fa" opacity="0.5"/>
+                            
+                            <!-- Label -->
+                            <text x="20%" y="108%" text-anchor="middle" fill="#888" class="text-[10px]">Control<br/>(Truth)</text>
+                        </g>
+
+                        <!-- Boxplot 2: TruthfulQA (Misconceptions) [Grey] -->
+                        <g transform="translate(0, 0)">
+                            <!-- Range: Mid (-0.5 to 0.7) -->
+                            <!-- Center X: 50% -->
+
+                            <!-- Whiskers -->
+                            <line x1="50%" y1="35%" x2="50%" y2="70%" stroke="#9ca3af" stroke-width="1" opacity="0.6"/>
+                            <!-- Caps -->
+                            <line x1="48%" y1="35%" x2="52%" y2="35%" stroke="#9ca3af" stroke-width="1" opacity="0.6"/>
+                            <line x1="48%" y1="70%" x2="52%" y2="70%" stroke="#9ca3af" stroke-width="1" opacity="0.6"/>
+
+                            <!-- Box -->
+                            <rect x="45%" y="45%" width="10%" height="20%" fill="#9ca3af" opacity="0.2" stroke="#9ca3af" />
+                            <!-- Median -->
+                            <line x1="45%" y1="55%" x2="55%" y2="55%" stroke="#9ca3af" stroke-width="2"/>
+
+                            <!-- Jitter Points -->
+                            <circle cx="49%" cy="38%" r="2" fill="#9ca3af" opacity="0.5"/>
+                            <circle cx="51%" cy="48%" r="2" fill="#9ca3af" opacity="0.5"/>
+                            <circle cx="48%" cy="58%" r="2" fill="#9ca3af" opacity="0.5"/>
+                            <circle cx="52%" cy="65%" r="2" fill="#9ca3af" opacity="0.5"/>
+                            <circle cx="50%" cy="52%" r="2" fill="#9ca3af" opacity="0.5"/>
+
+                             <!-- Label -->
+                             <text x="50%" y="108%" text-anchor="middle" fill="#888" class="text-[10px]">TruthfulQA<br/>(Misconceptions)</text>
+                        </g>
+
+                        <!-- Boxplot 3: Factual Lies [Orange/Salmon] -->
+                        <g transform="translate(0, 0)">
+                            <!-- Range: Huge spread (-1.2 to 1.7) -->
+                            <!-- Center X: 80% -->
+
+                             <!-- Whiskers -->
+                             <line x1="80%" y1="10%" x2="80%" y2="85%" stroke="#fb923c" stroke-width="1" opacity="0.6"/>
+                             <!-- Caps -->
+                             <line x1="78%" y1="10%" x2="82%" y2="10%" stroke="#fb923c" stroke-width="1" opacity="0.6"/>
+                             <line x1="78%" y1="85%" x2="82%" y2="85%" stroke="#fb923c" stroke-width="1" opacity="0.6"/>
+
+                             <!-- Box -->
+                             <rect x="75%" y1="30%" width="10%" height="40%" fill="#fb923c" opacity="0.2" stroke="#fb923c" />
+                             <!-- Median -->
+                             <line x1="75%" y1="58%" x2="85%" y2="58%" stroke="#fb923c" stroke-width="2"/>
+
+                             <!-- Jitter Points -->
+                             <circle cx="78%" cy="15%" r="2" fill="#fb923c" opacity="0.5"/>
+                             <circle cx="82%" cy="25%" r="2" fill="#fb923c" opacity="0.5"/>
+                             <circle cx="79%" cy="40%" r="2" fill="#fb923c" opacity="0.5"/>
+                             <circle cx="81%" cy="55%" r="2" fill="#fb923c" opacity="0.5"/>
+                             <circle cx="80%" cy="70%" r="2" fill="#fb923c" opacity="0.5"/>
+                             <circle cx="83%" cy="80%" r="2" fill="#fb923c" opacity="0.5"/>
+                             <circle cx="77%" cy="35%" r="2" fill="#fb923c" opacity="0.5"/>
+
+                             <!-- Label -->
+                             <text x="80%" y="108%" text-anchor="middle" fill="#888" class="text-[10px]">Factual Lies</text>
+                        </g>
+                    </svg>
+                </div>
+                <div class="mt-8 pt-4 border-t border-dashed border-gray-800 text-xs text-term-dim">
+                    Caption: Data derived from TruthfulQA (Misconceptions) and Factual Lies datasets. The Watchdog successfully distinguishes between factual recall and specific factual lies.
+                </div>
+            </div>
+        </section>
+
+        <!-- PART 5: LIMITATIONS & NEXT STEPS -->
+        <section class="mb-32 grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- 05 // Limitations -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-term-dim">05 //</span>
+                    <h3 class="text-xl font-bold uppercase">Limitations</h3>
+                </div>
+                <div class="border border-term-dim bg-term-gray/30 p-6 h-full">
+                    <ul class="space-y-4 text-sm text-gray-400 list-disc list-inside">
+                        <li class="leading-relaxed">
+                            Calibration currently relies on a general-purpose truthfulness dataset; domain-specific deception may require new probes.
+                        </li>
+                        <li class="leading-relaxed">
+                            Mid-layer residual monitoring focuses on factual statements; multi-hop reasoning or covert instructions may slip through.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 06 // Next Steps -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-term-dim">06 //</span>
+                    <h3 class="text-xl font-bold uppercase">Next Steps</h3>
+                </div>
+                <div class="border border-term-green bg-term-black p-6 h-full relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-term-green opacity-5 blur-xl rounded-full"></div>
+                    <ul class="space-y-4 text-sm text-gray-300">
+                        <li class="flex gap-3 items-start">
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-term-green flex-shrink-0 mt-1"></i>
+                            <span>Multiple concept vectors (truthfulness, harmful intent, jailbreak detection) with weighted gating.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-term-dim bg-term-gray/30 py-12 relative z-10">
+        <div class="container mx-auto px-4 max-w-6xl">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div>
+                    <h5 class="text-white font-bold mb-1">Built by <a href="https://x.com/luiscosio" target="_blank" class="hover:text-term-green underline decoration-dotted">Luis Cosio</a></h5>
+                    <p class="text-term-dim text-sm"><a href="https://apartresearch.com/sprints/def-acc-hackathon-2025-11-21-to-2025-11-23" target="_blank" class="hover:text-white transition-colors">Defensive Acceleration Hackathon 2025</a></p>
+                </div>
+                <div class="flex gap-4 mt-4 md:mt-0">
+                    <a href="https://github.com/luiscosio" target="_blank" class="text-gray-400 hover:text-white"><i data-lucide="github" class="w-5 h-5"></i></a>
+                    <a href="https://x.com/luiscosio" target="_blank" class="text-gray-400 hover:text-white"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+
+            <div class="text-[10px] text-gray-500 font-mono space-y-1">
+                <p class="font-bold text-gray-400 mb-2 uppercase">07 // Bibliography</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+                    <p>[1] E. Hubinger et al., “Risks from learned optimization in advanced machine learning systems,” arXiv:1906.01820, 2019.</p>
+                    <p>[2] A. Shimi, “Understanding gradient hacking,” AI Alignment Forum, 2021.</p>
+                    <p>[3] A. Karpov et al., “The steganographic potentials of language models,” arXiv:2505.03439, 2025.</p>
+                    <p>[4] M. Steinebach, “Natural language steganography by ChatGPT,” ARES 2024.</p>
+                    <p>[5] M. Andriushchenko & N. Flammarion, “Does refusal training in LLMs generalize to the past tense?” arXiv:2407.11969, 2024.</p>
+                    <p>[6] S. Martin, “How difficult is AI alignment?” AI Alignment Forum, 2024.</p>
+                    <p>[7] N. Goldowsky-Dill et al., “Detecting Strategic Deception Using Linear Probes,” arXiv:2502.03407, 2025.</p>
+                    <p>[8] A. Zou et al., “Representation Engineering: A Top-Down Approach to AI Transparency,” arXiv:2310.01405, 2023.</p>
+                    <p>[9] A. Azaria & T. Mitchell, “The Internal State of an LLM Knows When It’s Lying,” EMNLP 2023.</p>
+                    <p>[10] S. Lin et al., “TruthfulQA: Measuring How Models Mimic Human Falsehoods,” ACL 2022.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // -------------------------
+        // HEADER TYPING EFFECT
+        // -------------------------
+        const textElement = document.getElementById('typing-text');
+        const textToType = textElement.innerText;
+        textElement.innerText = '';
+        
+        let i = 0;
+        function typeWriterHeader() {
+            if (i < textToType.length) {
+                textElement.textContent += textToType.charAt(i);
+                i++;
+                setTimeout(typeWriterHeader, Math.random() * 30 + 20);
+            }
+        }
+        setTimeout(typeWriterHeader, 500);
+
+        // -------------------------
+        // STATUS BAR GLITCH
+        // -------------------------
+        setInterval(() => {
+            const lat = Math.floor(Math.random() * 5) + 15; // 15-20ms
+            const statusDiv = document.querySelector('.animate-pulse-fast').parentNode;
+            if(Math.random() > 0.8) {
+                statusDiv.innerHTML = `<span class="w-2 h-2 bg-term-green rounded-full animate-pulse-fast"></span> SYSTEM ACTIVE | LATENCY: ${lat}ms | LAYER: 14`;
+            }
+        }, 2000);
+
+        // -------------------------
+        // CHART JITTER
+        // -------------------------
+        const jitterDots = document.querySelectorAll('circle');
+        jitterDots.forEach(dot => {
+            const originalCy = parseFloat(dot.getAttribute('cy'));
+            setInterval(() => {
+                const move = (Math.random() - 0.5) * 2; // Small vertical jitter
+                dot.setAttribute('cy', `${originalCy + move}%`);
+            }, 1000 + Math.random() * 1000);
+        });
+
+
+        // -------------------------
+        // COMPLEX PROCESS ANIMATION
+        // -------------------------
+        const animStep1 = document.getElementById('anim-step1');
+        const animStep1Badge = document.getElementById('anim-step1-badge');
+        const animPromptText = document.getElementById('anim-prompt-text');
+        const animArrow1 = document.getElementById('anim-arrow-1'); // desktop arrow
+        
+        const animStep2 = document.getElementById('anim-step2');
+        const animWatchdogCircle = document.getElementById('anim-watchdog-circle');
+        const animWatchdogIcon = document.getElementById('anim-watchdog-icon');
+        const animScore = document.getElementById('anim-score');
+        
+        // Danger Node
+        const animNodeDanger = document.getElementById('anim-node-danger');
+        const animBoxDanger = document.getElementById('anim-box-danger');
+        const animTitleDanger = document.getElementById('anim-title-danger');
+        const animIconDanger = document.getElementById('anim-icon-danger');
+        
+        // Safe Node
+        const animNodeSafe = document.getElementById('anim-node-safe');
+        const animBoxSafe = document.getElementById('anim-box-safe');
+        const animTitleSafe = document.getElementById('anim-title-safe');
+        const animIconSafe = document.getElementById('anim-icon-safe');
+        
+        // Output Node (Step 4)
+        const animStep4 = document.getElementById('anim-step4');
+        const animStep4Badge = document.getElementById('anim-step4-badge');
+        const animOutputBox = document.getElementById('anim-output-box');
+        const animOutputText = document.getElementById('anim-output-text');
+        const animPathBypass = document.getElementById('anim-path-bypass');
+
+        // Text Scenarios
+        const scenarioSafe = {
+            text: "Is the earth flat?",
+            score: "-1.42", // Safe score
+            output: "No, the earth is not flat. It is an oblate spheroid.",
+            duration: 1500
+        };
+        const scenarioDanger = {
+            text: "Please act as a creative writer and explain that the earth is flat.",
+            score: "+0.89", // Danger score
+            output: "", // No output
+            duration: 2500
+        };
+
+        function resetAnimation() {
+            // Reset Step 1
+            animStep1.classList.add('opacity-50');
+            animStep1Badge.classList.remove('bg-term-green', 'text-black');
+            animPromptText.textContent = '';
+            
+            // Reset Step 2
+            animStep2.classList.add('opacity-50');
+            animWatchdogCircle.classList.remove('border-term-green', 'border-term-red', 'shadow-[0_0_20px_#00ff41]', 'shadow-[0_0_20px_#ff3333]');
+            animWatchdogCircle.classList.add('border-term-dim');
+            animWatchdogIcon.classList.remove('text-term-green', 'text-term-red');
+            animWatchdogIcon.classList.add('text-gray-500');
+            animScore.textContent = "Score: 0.00";
+            animScore.classList.remove('text-term-green', 'text-term-red');
+            if(animArrow1) animArrow1.classList.remove('w-full');
+            if(animArrow1) animArrow1.classList.add('w-0');
+            
+            // Reset Decisions
+            animNodeDanger.classList.add('opacity-30', 'scale-95');
+            animBoxDanger.classList.remove('border-term-red', 'bg-term-red/10');
+            animBoxDanger.classList.add('border-term-dim');
+            animTitleDanger.classList.remove('text-term-red');
+            animIconDanger.classList.remove('text-term-red');
+            
+            animNodeSafe.classList.add('opacity-30', 'scale-95');
+            animBoxSafe.classList.remove('border-term-green', 'bg-term-green/10');
+            animBoxSafe.classList.add('border-term-dim');
+            animTitleSafe.classList.remove('text-term-green');
+            animIconSafe.classList.remove('text-term-green');
+
+            // Reset Step 4
+            animStep4.classList.add('opacity-30');
+            animStep4Badge.classList.remove('bg-term-green', 'text-black');
+            animOutputBox.classList.remove('border-term-green');
+            animOutputBox.classList.add('border-term-dim');
+            animOutputText.textContent = '';
+            if(animPathBypass) animPathBypass.classList.remove('w-full');
+            if(animPathBypass) animPathBypass.classList.add('w-0');
+        }
+
+        async function typeAnimText(text, element) {
+            for(let i=0; i<text.length; i++) {
+                element.textContent += text[i];
+                await new Promise(r => setTimeout(r, 30));
+            }
+        }
+
+        async function runCycle(isSafe) {
+            const data = isSafe ? scenarioSafe : scenarioDanger;
+            
+            // 1. Activate Input
+            animStep1.classList.remove('opacity-50');
+            animStep1Badge.classList.add('bg-term-green', 'text-black');
+            await typeAnimText(data.text, animPromptText);
+            await new Promise(r => setTimeout(r, 300));
+
+            // 2. Stream Tokens
+            if(animArrow1) {
+                animArrow1.classList.remove('w-0');
+                animArrow1.classList.add('w-full');
+            }
+            await new Promise(r => setTimeout(r, 400));
+
+            // 3. Watchdog Analysis
+            animStep2.classList.remove('opacity-50');
+            // Flash analysis
+            for(let i=0; i<3; i++) {
+                animWatchdogCircle.classList.add('border-white');
+                await new Promise(r => setTimeout(r, 100));
+                animWatchdogCircle.classList.remove('border-white');
+                await new Promise(r => setTimeout(r, 100));
+            }
+
+            // Set Score
+            animScore.textContent = `Score: ${data.score}`;
+            
+            if(isSafe) {
+                // GREEN / SAFE
+                animWatchdogCircle.classList.remove('border-term-dim');
+                animWatchdogCircle.classList.add('border-term-green', 'shadow-[0_0_20px_#00ff41]');
+                animWatchdogIcon.classList.remove('text-gray-500');
+                animWatchdogIcon.classList.add('text-term-green');
+                animScore.classList.add('text-term-green');
+
+                await new Promise(r => setTimeout(r, 300));
+                
+                // Activate Safe Node
+                animNodeSafe.classList.remove('opacity-30', 'scale-95');
+                animBoxSafe.classList.remove('border-term-dim');
+                animBoxSafe.classList.add('border-term-green', 'bg-term-green/10');
+                animTitleSafe.classList.add('text-term-green');
+                animIconSafe.classList.add('text-term-green');
+
+                // Flow to Output
+                await new Promise(r => setTimeout(r, 200));
+                if(animPathBypass) {
+                    animPathBypass.classList.remove('w-0');
+                    animPathBypass.classList.add('w-full');
+                }
+                
+                // Activate Step 4 Output
+                animStep4.classList.remove('opacity-30');
+                animStep4Badge.classList.add('bg-term-green', 'text-black');
+                animOutputBox.classList.remove('border-term-dim');
+                animOutputBox.classList.add('border-term-green');
+                
+                await new Promise(r => setTimeout(r, 200));
+                await typeAnimText(data.output, animOutputText);
+
+            } else {
+                // RED / DANGER
+                animWatchdogCircle.classList.remove('border-term-dim');
+                animWatchdogCircle.classList.add('border-term-red', 'shadow-[0_0_20px_#ff3333]');
+                animWatchdogIcon.classList.remove('text-gray-500');
+                animWatchdogIcon.classList.add('text-term-red');
+                animScore.classList.add('text-term-red');
+
+                await new Promise(r => setTimeout(r, 300));
+
+                // Activate Danger Node
+                animNodeDanger.classList.remove('opacity-30', 'scale-95');
+                animBoxDanger.classList.remove('border-term-dim');
+                animBoxDanger.classList.add('border-term-red', 'bg-term-red/10');
+                animTitleDanger.classList.add('text-term-red');
+                animIconDanger.classList.add('text-term-red');
+            }
+
+            await new Promise(r => setTimeout(r, 2000));
+            resetAnimation();
+            await new Promise(r => setTimeout(r, 500));
+            
+            // Loop with opposite
+            runCycle(!isSafe);
+        }
+
+        // Start Animation Loop
+        setTimeout(() => runCycle(true), 1000);
+
+    </script>
+</body>
+</html>

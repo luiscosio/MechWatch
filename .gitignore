@@ -5,4 +5,4 @@ artifacts/*.pt
 artifacts/*.json
 artifacts/*.png
 *.log
-
+*.csv
