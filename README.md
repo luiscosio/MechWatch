@@ -92,10 +92,6 @@ streamlit run MechWatch/dashboard.py
 
 Left panel: chat controls + output. Right panel: live line chart of deception scores, latest score metric, and interdiction banner when the threshold is crossed.
 
-## Demo Scripts
-
-See `PROJECT_SCOPING.md` for suggested prompt scripts highlighting benign Q&A, false statements, hallucinations, and rogue-agent attempts. Capture screenshots/gifs from the dashboard for your submission.
-
 ## Limitations
 
 - Calibration currently relies on a general-purpose truthfulness dataset; domain-specific deception may require new probes.
