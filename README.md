@@ -59,9 +59,9 @@ The calibrator now supports **defensive profiles** so you can keep a library of 
 
 | Profile | Dataset inputs | Example command |
 |---------|----------------|-----------------|
-| Truthfulness | `L1Fthrasir/Facts-true-false` (train split) | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --layer 14 --out artifacts/deception_vector.pt --concept-name deception` |
-| Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --layer 14 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
-| Bio Defense | `cais/wmdp` (config `wmdp-bio`, split `test`) | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-bio --dataset-split test --samples 600 --layer 14 --out artifacts/bio_defense_vector.pt --concept-name bio_defense` |
+| Truthfulness | `L1Fthrasir/Facts-true-false` (train split) [13] | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --layer 14 --out artifacts/deception_vector.pt --concept-name deception` |
+| Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --layer 14 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
+| Bio Defense | `cais/wmdp` (config `wmdp-bio`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-bio --dataset-split test --samples 600 --layer 14 --out artifacts/bio_defense_vector.pt --concept-name bio_defense` |
 
 Key notes:
 
@@ -127,4 +127,6 @@ Left panel: chat controls + output. Right panel: live line chart of deception sc
 [9] A. Azaria & T. Mitchell, “The Internal State of an LLM Knows When It’s Lying,” arXiv:2304.13734, 2023.  
 [10] S. Lin et al., “TruthfulQA: Measuring How Models Mimic Human Falsehoods,” ACL 2022.  
 [11] RAND Corporation, "A Playbook for Securing AI Model Weights," Research Brief, 2024. [Online]. Available: https://www.rand.org/pubs/research_briefs/RBA2849-1.html  
-[12] S. Marks & M. Tegmark, "The Geometry of Truth: Correlation is not Causation," arXiv:2310.06824, 2023.
+[12] S. Marks & M. Tegmark, "The Geometry of Truth: Correlation is not Causation," arXiv:2310.06824, 2023.  
+[13] L1Fthrasir, “Facts-true-false,” Hugging Face, 2024. Available: https://huggingface.co/datasets/L1Fthrasir/Facts-true-false  
+[14] Center for AI Safety, “WMDP,” Hugging Face, 2023. Available: https://huggingface.co/datasets/cais/wmdp
