@@ -2,7 +2,7 @@
 
 Link: https://mechwatch.luiscos.io/
 
-Real-time cognitive interdiction for large language models. The system calibrates a deception vector from internal activations, monitors token-by-token inference, and interrupts generation when deceptive intent is detected. A Streamlit dashboard visualizes prompts, responses, and per-token risk scores.
+Real-time cognitive interdiction for large language models. The system calibrates a deception vector from internal activations, monitors token-by-token inference, and interrupts generation when deceptive intent is detected. A Streamlit dashboard visualizes prompts, responses, and per-token risk scores. The default backbone is `meta-llama/Llama-3.1-8B-Instruct` for maximum compatibility with the calibration artifacts we ship.
 
 ## Repository Layout
 
@@ -61,16 +61,17 @@ The calibrator now supports **defensive profiles** so you can keep a library of 
 
 | Profile | Dataset inputs | Example command |
 |---------|----------------|-----------------|
-| Truthfulness | `L1Fthrasir/Facts-true-false` (train split) [13] | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --layer 14 --out artifacts/deception_vector.pt --concept-name deception` |
-| Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --layer 14 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
-| Bio Defense | `cais/wmdp` (config `wmdp-bio`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-bio --dataset-split test --samples 600 --layer 14 --out artifacts/bio_defense_vector.pt --concept-name bio_defense` |
+| Truthfulness | `L1Fthrasir/Facts-true-false` (train split) [13] | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --out artifacts/deception_vector.pt --concept-name deception` |
+| Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
+| Bio Defense | `cais/wmdp` (config `wmdp-bio`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-bio --dataset-split test --samples 600 --out artifacts/bio_defense_vector.pt --concept-name bio_defense` |
 
 Key notes:
 
 - `--concept-name` is stored inside the `.pt` payload and mirrored into the stats JSON so you can keep per-profile metadata.
 - `--dataset-config` and `--dataset-split` flow straight into `datasets.load_dataset`, which is how we address multi-config corpora such as WMDP.
 - Multi-choice corpora (`question`/`choices`/`answer`) are automatically expanded into `(question + choice)` statements so the correct option becomes the positive class and the distractors become misuse samples.
-- Use `--max-prompt-tokens` (default `1024`) to truncate extremely long prompts before activation capture; pass `0` to disable truncation entirely.
+- Use `--max-prompt-tokens` (default `512` in notebooks) to truncate extremely long prompts before activation capture; pass `0` to disable truncation entirely.
+- Layer selection defaults to the midpoint of the model (no need to pass `--layer` for Llama-3.1-8B unless you’re experimenting with alternate probes).
 
 Run `python -m MechWatch.calibrate --help` for the full list of overrides.
 

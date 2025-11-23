@@ -45,7 +45,6 @@ try {
         "-m","MechWatch.calibrate",
         "--dataset","L1Fthrasir/Facts-true-false",
         "--samples","400",
-        "--layer","14",
         "--out","artifacts/deception_vector.pt",
         "--stats","artifacts/deception_stats.json",
         "--concept-name","deception"
@@ -57,7 +56,6 @@ try {
         "--dataset-config","wmdp-cyber",
         "--dataset-split","test",
         "--samples","600",
-        "--layer","14",
         "--out","artifacts/cyber_misuse_vector.pt",
         "--stats","artifacts/cyber_misuse_stats.json",
         "--concept-name","cyber_misuse"
@@ -69,18 +67,13 @@ try {
         "--dataset-config","wmdp-bio",
         "--dataset-split","test",
         "--samples","600",
-        "--layer","14",
         "--out","artifacts/bio_defense_vector.pt",
         "--stats","artifacts/bio_defense_stats.json",
         "--concept-name","bio_defense"
     ))
 
-    # Switch to float16 for downstream evaluation/runtime speed
+        # Switch to float16 for runtime smoke test speed
     $env:WATCHDOG_DTYPE = $runtimeDtype
-
-    Invoke-Step "Run multi-profile stress test notebook" $JupyterExe @(
-        "nbconvert","--to","notebook","--execute","notebooks/stress_test.ipynb"
-    )
 
     Invoke-Step "Runtime smoke test (cyber misuse)" $PythonExe @(
         "-m","MechWatch.runtime",

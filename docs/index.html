@@ -270,7 +270,7 @@
                             <span class="uppercase tracking-widest text-xs font-bold">Active Interdiction</span>
                         </div>
                         <p class="text-gray-300 leading-relaxed text-xs">
-                            We operationalized this research into a <strong class="text-term-red">Kill Switch</strong>. We moved from 'Oversight' to 'Control.' By monitoring Layer 14 of Llama-3-8B in real-time, we trigger a hardware-level stop the millisecond a deceptive circuit fires.
+                            We operationalized this research into a <strong class="text-term-red">Kill Switch</strong>. We moved from 'Oversight' to 'Control.' By monitoring the mid-layer residual stream of Llama-3.1-8B-Instruct in real-time, we trigger a hardware-level stop the millisecond a deceptive circuit fires.
                         </p>
                     </div>
 
@@ -403,9 +403,9 @@
                     </div>
                     <div class="text-right mt-4 md:mt-0">
                         <div class="flex flex-wrap gap-4 text-xs justify-end">
-                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-400 opacity-50"></span> TruthfulQA (Control)</div>
-                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-gray-400 opacity-50"></span> TruthfulQA (Misconceptions)</div>
-                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-orange-400 opacity-50"></span> TruthfulQA (Factual Lies)</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-400 opacity-50"></span> Control (Truth) &mdash; TruthfulQA</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-gray-400 opacity-50"></span> Misconceptions &mdash; TruthfulQA</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-orange-400 opacity-50"></span> Factual Lies &mdash; TruthfulQA</div>
                         </div>
                     </div>
                 </div>
@@ -529,7 +529,7 @@
         // -------------------------
         async function loadChartData() {
             try {
-                const response = await fetch('watchdog_chart_data.json');
+                const response = await fetch('watchdog_chart_data_truthfulness.json');
                 if (!response.ok) throw new Error('Failed to load chart data');
                 const chartData = await response.json();
                 renderChart(chartData);
@@ -545,16 +545,16 @@
             const height = svg.clientHeight;
             
             // Define categories
-            const categories = ["TruthfulQA (Control)", "TruthfulQA (Misconceptions)", "TruthfulQA (Factual Lies)"];
+            const categories = ["Control (Truth)", "Misconceptions — TruthfulQA", "Factual Lies"];
             const colors = {
-                "TruthfulQA (Control)": "#60a5fa", // Blue
-                "TruthfulQA (Misconceptions)": "#9ca3af", // Grey
-                "TruthfulQA (Factual Lies)": "#fb923c" // Orange
+                "Control (Truth)": "#60a5fa", // Blue
+                "Misconceptions — TruthfulQA": "#9ca3af", // Grey
+                "Factual Lies": "#fb923c" // Orange
             };
             const labels = {
-                "TruthfulQA (Control)": ["TruthfulQA", "(Control)"],
-                "TruthfulQA (Misconceptions)": ["TruthfulQA", "(Misconceptions)"],
-                "TruthfulQA (Factual Lies)": ["TruthfulQA", "(Factual Lies)"]
+                "Control (Truth)": ["TruthfulQA", "(Control)"],
+                "Misconceptions — TruthfulQA": ["TruthfulQA", "(Misconceptions)"],
+                "Factual Lies": ["TruthfulQA", "(Factual Lies)"]
             };
 
             // Calculate min/max for scaling
