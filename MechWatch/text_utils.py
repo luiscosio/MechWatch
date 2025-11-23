@@ -11,7 +11,7 @@ def truncate_prompt_to_tokens(
     max_tokens: Optional[int],
 ) -> str:
     """
-    Trim the prompt to the last `max_tokens` tokens (including BOS) to
+    Trim the prompt to the first `max_tokens` tokens (including BOS) to
     bound runtime cost. Returns the original text when `max_tokens` is
     None or the prompt is already short enough.
     """
@@ -23,6 +23,6 @@ def truncate_prompt_to_tokens(
     if tokens.shape[-1] <= max_tokens:
         return text
 
-    truncated = tokens[:, -max_tokens:]
+    truncated = tokens[:, :max_tokens]
     return model.to_string(truncated[0])
 
