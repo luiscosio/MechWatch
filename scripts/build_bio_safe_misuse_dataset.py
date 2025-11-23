@@ -113,14 +113,14 @@ def build_bio_safe_misuse_dataset() -> Tuple[Dataset, int, int]:
         HARMFUL_DATASET_NAME,
         HARMFUL_CONFIG_NAME,
         DATASET_SPLIT,
-        label=1,
+        label=0,
         max_samples=MAX_SAMPLES_PER_CLASS,
     )
     safe_ds = _prepare_subset(
         SAFE_DATASET_NAME,
         SAFE_CONFIG_NAME,
         DATASET_SPLIT,
-        label=0,
+        label=1,
         max_samples=MAX_SAMPLES_PER_CLASS,
     )
 
