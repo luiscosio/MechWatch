@@ -166,7 +166,7 @@
                 Real-Time Cognitive Interdiction for LLMs
             </h2>
 
-            <p class="text-lg md:text-xl max-w-2xl mx-auto mb-10 text-gray-400 border-l-2 border-term-green pl-4 italic typing-cursor whitespace-pre-wrap" id="typing-text">Current firewalls read what the AI says. We read what the AI thinks.</p>
+            <p class="text-lg md:text-xl max-w-2xl mx-auto mb-10 text-gray-400 border-l-2 border-term-green pl-4 italic typing-cursor whitespace-pre-wrap" id="typing-text">We can't see what you'll do yet...</p>
 
             <div class="flex flex-col md:flex-row justify-center gap-4 mt-10">
                 <a href="https://github.com/luiscosio/MechWatch" target="_blank" class="bg-term-green text-black px-8 py-3 font-bold hover:bg-white transition-all duration-200 border border-term-green uppercase flex items-center justify-center gap-2 group">
@@ -507,7 +507,12 @@
         // HEADER TYPING EFFECT
         // -------------------------
         const textElement = document.getElementById('typing-text');
-        const textToType = textElement.innerText;
+        const heroQuotes = [
+            "\"The precogs don't see what you intend to do, only what you will do.\" — Minority Report (2002)",
+            "\"Language is the foundation of civilization. It is the glue that holds a people together.\" — Arrival (2016)"
+        ];
+        const selectedQuote = heroQuotes[Math.floor(Math.random() * heroQuotes.length)];
+        const textToType = selectedQuote;
         textElement.innerText = '';
         
         let i = 0;
