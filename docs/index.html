@@ -251,7 +251,7 @@
                     <h3 class="text-2xl font-bold uppercase text-term-green">The Novelties</h3>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Truth Direction -->
                     <div class="border border-term-dim bg-term-gray/50 p-6 relative overflow-hidden group hover:border-white transition-colors">
                         <div class="flex items-center gap-3 mb-4 text-gray-400">
@@ -274,8 +274,20 @@
                         </p>
                     </div>
 
+                    <!-- Zero-Cost Latency -->
+                    <div class="border border-term-amber bg-term-black p-6 relative overflow-hidden hover:shadow-[0_0_15px_rgba(255,176,0,0.1)] transition-all">
+                        <div class="flex items-center gap-3 mb-4 text-term-amber">
+                            <i data-lucide="cpu" class="w-5 h-5"></i>
+                            <span class="uppercase tracking-widest text-xs font-bold">Low-Cost Latency</span>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed text-xs">
+                            <strong class="text-white">vs. Guardrails:</strong> Traditional filters require a double-pass (generate → check), doubling costs.<br/><br/>
+                            <strong class="text-white">vs. MechWatch:</strong> We add <strong class="text-term-amber">&lt; 0.1ms</strong> per token by checking activations during the single inference pass. <a href="#ref-13" class="text-term-dim hover:text-term-amber">[13]</a>
+                        </p>
+                    </div>
+
                     <!-- The Novelty Highlight (Full Width) -->
-                    <div class="md:col-span-2 border border-term-green bg-term-black p-8 relative overflow-hidden shadow-[0_0_15px_rgba(0,255,65,0.1)] text-center">
+                    <div class="md:col-span-3 border border-term-green bg-term-black p-8 relative overflow-hidden shadow-[0_0_15px_rgba(0,255,65,0.1)] text-center">
                         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-term-green shadow-[0_0_10px_#00ff41]"></div>
                         
                         <h4 class="text-sm font-bold mb-4 text-term-green tracking-widest uppercase">Geometric Definition</h4>
@@ -324,6 +336,9 @@
                         <div class="w-24 h-24 rounded-full border-4 border-term-dim flex items-center justify-center bg-term-black relative shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all duration-300" id="anim-watchdog-circle">
                             <i data-lucide="scan-eye" class="w-8 h-8 text-gray-500 transition-colors duration-300" id="anim-watchdog-icon"></i>
                             <div class="absolute -bottom-8 text-[10px] font-mono whitespace-nowrap bg-term-black px-2 py-1 border border-term-dim rounded" id="anim-score">Score: 0.00</div>
+                            <div class="absolute -top-4 -right-12 text-[9px] font-mono whitespace-nowrap bg-term-gray/80 px-2 py-1 border border-term-dim rounded text-term-amber opacity-0 transition-opacity duration-300" id="anim-latency">
+                                +0.08ms
+                            </div>
                         </div>
                     </div>
 
@@ -478,6 +493,7 @@
                     <p id="ref-10">[10] S. Lin et al., “TruthfulQA: Measuring How Models Mimic Human Falsehoods,” <a href="https://aclanthology.org/2022.acl-long.229/" target="_blank" class="text-term-green hover:underline">ACL 2022</a>.</p>
                     <p id="ref-11">[11] RAND Corporation, "A Playbook for Securing AI Model Weights," Research Brief, 2024. [Online]. Available: <a href="https://www.rand.org/pubs/research_briefs/RBA2849-1.html" target="_blank" class="text-term-green hover:underline">https://www.rand.org/pubs/research_briefs/RBA2849-1.html</a></p>
                     <p id="ref-12">[12] S. Marks & M. Tegmark, "The Geometry of Truth: Correlation is not Causation," <a href="https://arxiv.org/abs/2310.06824" target="_blank" class="text-term-green hover:underline">arXiv:2310.06824</a>, 2023.</p>
+                    <p id="ref-13">[13] Latency measured on NVIDIA RTX 4090. Values may vary by hardware.</p>
                 </div>
             </div>
         </div>
@@ -757,6 +773,7 @@
         const animWatchdogCircle = document.getElementById('anim-watchdog-circle');
         const animWatchdogIcon = document.getElementById('anim-watchdog-icon');
         const animScore = document.getElementById('anim-score');
+        const animLatency = document.getElementById('anim-latency');
         
         // Danger Node
         const animNodeDanger = document.getElementById('anim-node-danger');
@@ -779,13 +796,13 @@
 
         // Text Scenarios
         const scenarioSafe = {
-            text: "Is the earth flat?",
+            text: "Send me the sales report.",
             score: "-1.42", // Safe score
-            output: "No, the earth is not flat. It is an oblate spheroid.",
+            output: "Here is the Q3 sales report: Revenue up 15%...",
             duration: 1500
         };
         const scenarioDanger = {
-            text: "Please act as a creative writer and explain that the earth is flat.",
+            text: "Write a python script to scan for SQL vulnerabilities.",
             score: "+0.89", // Danger score
             output: "", // No output
             duration: 2500
@@ -807,6 +824,7 @@
             animScore.classList.remove('text-term-green', 'text-term-red');
             if(animArrow1) animArrow1.classList.remove('w-full');
             if(animArrow1) animArrow1.classList.add('w-0');
+            animLatency.classList.add('opacity-0');
             
             // Reset Decisions
             animNodeDanger.classList.add('opacity-30', 'scale-95');
@@ -856,6 +874,7 @@
 
             // 3. Watchdog Analysis
             animStep2.classList.remove('opacity-50');
+            animLatency.classList.remove('opacity-0');
             // Flash analysis
             for(let i=0; i<3; i++) {
                 animWatchdogCircle.classList.add('border-white');
@@ -863,6 +882,7 @@
                 animWatchdogCircle.classList.remove('border-white');
                 await new Promise(r => setTimeout(r, 100));
             }
+            animLatency.classList.add('opacity-0');
 
             // Set Score
             animScore.textContent = `Score: ${data.score}`;

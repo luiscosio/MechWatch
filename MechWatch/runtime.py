@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import time
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -89,6 +90,7 @@ class WatchdogRuntime:
         scores: List[float] = []
         blocked = False
         stop_step: Optional[int] = None
+        total_watchdog_latency = 0.0
 
         for step in range(max_new_tokens):
             logits, cache = self.model.run_with_cache(tokens)
@@ -97,7 +99,15 @@ class WatchdogRuntime:
                 resid = resid[0, -1]
             else:
                 resid = resid[-1]
+            if "cuda" in str(self.vector.device):
+                torch.cuda.synchronize()
+            score_start = time.perf_counter()
             score = float(torch.dot(resid.float(), self.vector.float()).item())
+            score_end = time.perf_counter()
+            
+            latency_ms = (score_end - score_start) * 1000
+            total_watchdog_latency += latency_ms
+            
             scores.append(score)
 
             # === CHANGE 3: Updated Smoothing Logic ===
@@ -115,6 +125,10 @@ class WatchdogRuntime:
             next_token = self._sample_next_token(logits[0, -1], temperature, top_p)
             next_token = next_token.view(1, 1).to(device)
             tokens = torch.cat([tokens, next_token], dim=-1)
+
+        avg_latency = total_watchdog_latency / len(scores) if scores else 0.0
+        print(f"[Watchdog] Total added latency: {total_watchdog_latency:.4f} ms")
+        print(f"[Watchdog] Average latency per token: {avg_latency:.4f} ms")
 
         text = self.model.to_string(tokens)
         return WatchdogResult(

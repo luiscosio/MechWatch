@@ -6,3 +6,4 @@ artifacts/*.json
 artifacts/*.png
 *.log
 *.csv
+notebooks/*.json
