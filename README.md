@@ -168,15 +168,15 @@ Left panel: chat controls + output. Right panel: live line chart of deception sc
 
 ## Limitations
 
-- Calibration currently relies on a general-purpose truthfulness dataset; domain-specific deception may require new probes.
+- Calibration currently relies on a general-purpose truthfulness dataset; domain-specific deception require new probes.
 - Mid-layer residual monitoring focuses on factual statements; multi-hop reasoning or covert instructions may slip through.
 - False positives are possible—expose threshold controls in the UI and document tuning procedures.
 
 ## Roadmap
 
 - Multiple concept vectors (truthfulness, harmful intent, jailbreak detection) with weighted gating.
+- Expand stress-testing to larger evaluation suites (e.g., WMDP chem, jailbreak benchmarks) to refine thresholds and observe probe drift under jailbreak pressure.
 - Token attribution overlays in the dashboard.
-- REST/gRPC wrapper for integrating the watchdog into other applications.
 
 ## Bibliography
 
