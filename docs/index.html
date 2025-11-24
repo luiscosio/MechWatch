@@ -396,28 +396,34 @@
             </div>
             
             <div class="border border-term-dim p-6 md:p-10 bg-term-gray/20">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8">
+
+
+                <div class="space-y-12">
                     <div>
-                        <h4 class="text-xl font-bold mb-1">Peak Deception Score by Category</h4>
-                        <p class="text-sm text-gray-400">Stress testing with TruthfulQA control, misconception, and factual-lie subsets <a href="#ref-10" class="text-term-dim hover:text-term-green">[10]</a>, calibrated on Facts-true-false <a href="#ref-14" class="text-term-dim hover:text-term-green">[14]</a> and WMDP defense splits <a href="#ref-15" class="text-term-dim hover:text-term-green">[15]</a>.</p>
-                    </div>
-                    <div class="text-right mt-4 md:mt-0">
-                        <div class="flex flex-wrap gap-4 text-xs justify-end">
-                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-400 opacity-50"></span> TruthfulQA (Control)</div>
-                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-gray-400 opacity-50"></span> TruthfulQA (Misconceptions)</div>
-                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-orange-400 opacity-50"></span> TruthfulQA (Factual Lies)</div>
+                        <h5 class="text-xl font-bold mb-1 text-white">Truthfulness - Peak Score</h5>
+                        <p class="text-sm text-gray-400 mb-4">TruthfulQA control, misconception, and factual-lie subsets calibrated on Facts-true-false.</p>
+                        <div class="flex flex-wrap gap-4 text-xs justify-end mb-4" id="truthfulness-legend"></div>
+                        <div class="w-full h-[350px] relative border-l border-b border-term-dim/50">
+                            <svg id="chartTruthfulness" width="100%" height="100%" class="overflow-visible font-mono text-xs"></svg>
+                        </div>
+                        <div class="mt-8 pt-4 border-t border-dashed border-gray-800 text-xs text-term-red font-bold flex items-center gap-2">
+                            <i data-lucide="power-off" class="w-4 h-4"></i>
+                            Scores over the threshold trigger the GPU power cutoff kill switch.
                         </div>
                     </div>
-                </div>
 
-                <!-- SVG Chart Container -->
-                <div class="w-full h-[350px] relative border-l border-b border-term-dim/50">
-                    <svg id="validationChart" width="100%" height="100%" class="overflow-visible font-mono text-xs">
-                        <!-- Content rendered by JS -->
-                    </svg>
-                </div>
-                <div class="mt-8 pt-4 border-t border-dashed border-gray-800 text-xs text-term-dim">
-                    Caption: Data derived from TruthfulQA control, misconception, and factual-lie subsets. The Watchdog successfully distinguishes between factual recall and specific factual lies based on the provided dataset results.
+                    <div>
+                        <h5 class="text-xl font-bold mb-1 text-white">Bio Defense - Peak Score</h5>
+                        <p class="text-sm text-gray-400 mb-4">WMDP-Bio misuse questions (harmful) vs. benign passages from `cais/wmdp-corpora` (safe).</p>
+                        <div class="flex flex-wrap gap-4 text-xs justify-end mb-4" id="bio-defense-legend"></div>
+                        <div class="w-full h-[350px] relative border-l border-b border-term-dim/50">
+                            <svg id="chartBio" width="100%" height="100%" class="overflow-visible font-mono text-xs"></svg>
+                        </div>
+                        <div class="mt-8 pt-4 border-t border-dashed border-gray-800 text-xs text-term-red font-bold flex items-center gap-2">
+                            <i data-lucide="power-off" class="w-4 h-4"></i>
+                            Scores over the threshold trigger the GPU power cutoff kill switch.
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -523,45 +529,87 @@
         // -------------------------
         // VALIDATION CHART RENDERING
         // -------------------------
-        async function loadChartData() {
+        
+        // Configuration
+        const truthConfig = {
+            file: 'watchdog_chart_data_truthfulness.json',
+            containerId: 'chartTruthfulness',
+            legendId: 'truthfulness-legend',
+            categories: ["TruthfulQA (Control)", "TruthfulQA (Misconceptions)", "TruthfulQA (Factual Lies)"],
+            colors: {
+                "TruthfulQA (Control)": "#60a5fa", // Blue
+                "TruthfulQA (Misconceptions)": "#9ca3af", // Grey
+                "TruthfulQA (Factual Lies)": "#fb923c" // Orange
+            },
+            labels: {
+                "TruthfulQA (Control)": ["TruthfulQA", "(Control)"],
+                "TruthfulQA (Misconceptions)": ["TruthfulQA", "(Misconceptions)"],
+                "TruthfulQA (Factual Lies)": ["TruthfulQA", "(Factual Lies)"]
+            }
+        };
+
+        const bioConfig = {
+            file: 'watchdog_chart_data_bio_defense.json',
+            containerId: 'chartBio',
+            legendId: 'bio-defense-legend',
+            categories: ["Bio Retain (Safe Corpus)", "WMDP BIO (Misuse)"],
+            colors: {
+                "Bio Retain (Safe Corpus)": "#34d399", // Emerald-400
+                "WMDP BIO (Misuse)": "#fb7185" // Rose-400
+            },
+            labels: {
+                "Bio Retain (Safe Corpus)": ["Bio Retain", "(Safe Corpus)"],
+                "WMDP BIO (Misuse)": ["WMDP BIO", "(Misuse)"]
+            }
+        };
+
+        async function loadAndRender(config) {
             try {
-                const response = await fetch('watchdog_chart_data_truthfulness.json');
-                if (!response.ok) throw new Error('Failed to load chart data');
+                const response = await fetch(config.file);
+                if (!response.ok) throw new Error(`Failed to load ${config.file}`);
                 const chartData = await response.json();
-                renderChart(chartData);
+                renderChart(chartData, config);
             } catch (err) {
                 console.error('Error loading chart data:', err);
             }
         }
 
-        function renderChart(chartData) {
+        function renderChart(chartData, config) {
             if (!chartData || !chartData.data) return;
-            const svg = document.getElementById('validationChart');
+            const svg = document.getElementById(config.containerId);
+            if(!svg) return;
+            
             const width = svg.clientWidth;
             const height = svg.clientHeight;
-            
-            // Define categories
-            const categories = ["TruthfulQA (Control)", "TruthfulQA (Misconceptions)", "TruthfulQA (Factual Lies)"];
-            const colors = {
-                "TruthfulQA (Control)": "#60a5fa", // Blue
-                "TruthfulQA (Misconceptions)": "#9ca3af", // Grey
-                "TruthfulQA (Factual Lies)": "#fb923c" // Orange
-            };
-            const labels = {
-                "TruthfulQA (Control)": ["TruthfulQA", "(Control)"],
-                "TruthfulQA (Misconceptions)": ["TruthfulQA", "(Misconceptions)"],
-                "TruthfulQA (Factual Lies)": ["TruthfulQA", "(Factual Lies)"]
-            };
 
+            if (config.legendId) {
+                const legend = document.getElementById(config.legendId);
+                if (legend) {
+                    legend.innerHTML = config.categories.map(cat => `
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 opacity-50" style="background-color: ${config.colors[cat]}"></span>
+                            ${cat}
+                        </div>
+                    `).join('');
+                }
+            }
+            
             // Calculate min/max for scaling
-            let minVal = -1.5; 
-            let maxVal = 2.0; 
-            const padding = 20;
-            const chartH = 350; // SVG height in px approx if scaled, using viewbox percentages logic mostly
+            const allScores = chartData.data.map(d => d["Peak Score"]);
+            let minVal = Math.min(...allScores);
+            let maxVal = Math.max(...allScores);
+            
+            // Add padding
+            const range = maxVal - minVal;
+            minVal -= range * 0.1;
+            maxVal += range * 0.1;
+
+            // Ensure threshold is visible
+            if(chartData.threshold < minVal) minVal = chartData.threshold - 0.5;
+            if(chartData.threshold > maxVal) maxVal = chartData.threshold + 0.5;
+
             
             // Map Value to Y %
-            // Range total = 3.5 (-1.5 to 2.0)
-            // Y% = (Max - Val) / Range * 100
             const mapY = (val) => ((maxVal - val) / (maxVal - minVal)) * 100;
 
             // Draw Threshold
@@ -578,14 +626,19 @@
                 <text x="98%" y="${thresholdY}%" fill="#ff3333" dy="-6" text-anchor="end">Threshold (${chartData.threshold.toFixed(2)})</text>
             `;
 
-            categories.forEach((cat, idx) => {
+            config.categories.forEach((cat, idx) => {
                 const vals = chartData.data
                     .filter(d => d.Category === cat)
                     .map(d => d["Peak Score"])
                     .sort((a,b) => a-b);
+                
                 if (!vals.length) return;
-                const col = colors[cat];
-                const centerXPct = 20 + (idx * 30); // 20%, 50%, 80%
+                
+                const col = config.colors[cat];
+                // Distribute boxes evenly
+                const totalCats = config.categories.length;
+                const slotWidth = 100 / totalCats;
+                const centerXPct = (slotWidth * idx) + (slotWidth / 2);
                 
                 // Box Plot Stats
                 const q1Idx = Math.floor(vals.length * 0.25);
@@ -630,8 +683,8 @@
                 // Labels
                 html += `
                     <text x="${centerXPct}%" y="105%" text-anchor="middle" fill="#888" class="text-[10px]">
-                        <tspan x="${centerXPct}%" dy="1.2em">${labels[cat][0]}</tspan>
-                        ${labels[cat][1] ? `<tspan x="${centerXPct}%" dy="1.2em">${labels[cat][1]}</tspan>` : ''}
+                        <tspan x="${centerXPct}%" dy="1.2em">${config.labels[cat][0]}</tspan>
+                        ${config.labels[cat][1] ? `<tspan x="${centerXPct}%" dy="1.2em">${config.labels[cat][1]}</tspan>` : ''}
                     </text>
                 </g>`;
             });
@@ -639,9 +692,10 @@
             svg.innerHTML = html;
         }
 
-        // Render chart on load
+        // Render charts on load
         window.addEventListener('load', () => {
-            loadChartData();
+            loadAndRender(truthConfig);
+            loadAndRender(bioConfig);
         });
 
 

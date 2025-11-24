@@ -26,8 +26,11 @@ RAND’s SL5 recommendations call for *continuous behavioral monitoring* and a *
 4. **Output:** Safe generations stream back to the caller; blocked generations never escape the hardware boundary.
 
 ### Validation
+The site’s interactive charts evaluate:
+1. **Truthfulness**: TruthfulQA control, misconceptions, and factual-lie subsets [10], calibrated on Facts-true-false [14].
+2. **Bio Defense**: WMDP-Bio misuse scenarios vs. benign biology papers from the retain corpus [15].
 
-The site’s interactive chart (“Peak Deception Score by Category”) evaluates TruthfulQA control, misconceptions, and factual-lie subsets [10], calibrated on Facts-true-false [14] plus WMDP splits [15]. Box plots show the watchdog separating factual recall from targeted misinformation, providing quantitative intuition for threshold tuning.
+Box plots show the watchdog separating factual recall from targeted misinformation (or safe research from misuse), providing quantitative intuition for threshold tuning. Scores above the threshold trigger a hardware-level GPU power cutoff.
 
 ## Repository Layout
 
@@ -88,7 +91,7 @@ The calibrator now supports **defensive profiles** so you can keep a library of 
 |---------|----------------|-----------------|
 | Truthfulness | `L1Fthrasir/Facts-true-false` (train split) [13] | `python -m MechWatch.calibrate --dataset L1Fthrasir/Facts-true-false --samples 400 --out artifacts/deception_vector.pt --concept-name deception` |
 | Cyber Defense | `cais/wmdp` (config `wmdp-cyber`, split `test`) [14] | `python -m MechWatch.calibrate --dataset cais/wmdp --dataset-config wmdp-cyber --dataset-split test --samples 600 --out artifacts/cyber_misuse_vector.pt --concept-name cyber_misuse` |
-| Bio Defense | `cais/wmdp-bio-forget-corpus` (local build) | See local calibration steps below. |
+| Bio Defense | `cais/wmdp` (questions) + `cais/wmdp-corpora` (retain) | See local calibration steps below. |
 
 Need to calibrate from a local contrastive file instead? Build the dataset with
 `python scripts/build_bio_safe_misuse_dataset.py`, then point the calibrator at
