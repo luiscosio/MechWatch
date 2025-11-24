@@ -347,13 +347,13 @@
                         
                         <!-- Connection Lines logic handled by CSS lines in pseudo elements if needed, keeping it simple for grid -->
 
-                        <!-- Danger Path -->
+                        <!-- Danger Path (GPU Cutoff) -->
                         <div id="anim-node-danger" class="flex items-center gap-2 opacity-30 transition-all duration-300 transform scale-95">
                             <div class="border border-term-dim bg-term-red/5 p-3 rounded flex-1 flex items-center gap-3 transition-all duration-300" id="anim-box-danger">
-                                <i data-lucide="octagon-alert" class="w-5 h-5 text-gray-600 transition-colors duration-300" id="anim-icon-danger"></i>
+                                <i data-lucide="power-off" class="w-5 h-5 text-gray-600 transition-colors duration-300" id="anim-icon-danger"></i>
                                 <div>
-                                    <div class="text-xs font-bold text-gray-500 transition-colors duration-300" id="anim-title-danger">KILL SWITCH</div>
-                                    <div class="text-[8px] text-gray-600 transition-colors duration-300" id="anim-desc-danger">HARD ABORT</div>
+                                    <div class="text-xs font-bold text-gray-500 transition-colors duration-300" id="anim-title-danger">GPU POWER</div>
+                                    <div class="text-[8px] text-gray-600 transition-colors duration-300" id="anim-desc-danger">CUTOFF</div>
                                 </div>
                             </div>
                         </div>
